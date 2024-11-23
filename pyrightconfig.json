@@ -1,0 +1,18 @@
+{
+  "include": [
+    "src/**"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+  ],
+  "defineConstant": {
+    "DEBUG": true
+  },
+  // add rules as needed.
+  "typeCheckingMode": "standard", // strict only per-file basis.
+  "verboseOutput": true,
+  "reportMissingImports": "error",
+  "reportMissingTypeStubs": false,
+  "pythonVersion": "3.11",
+}

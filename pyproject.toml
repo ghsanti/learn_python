@@ -1,0 +1,26 @@
+[project]
+name = "torch-practice"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pyright>=1.1.389",
+    "pytest>=8.3.3",
+    "ray[tune]>=2.39.0",
+    "ruff>=0.8.0",
+    "torch>=2.5.1",
+    "torchvision>=0.20.1",
+]
+
+
+[tool.uv.sources] # do not use index for Darwin (uses PyPI)
+torch = [{ index = "pytorch-cpu", marker = "platform_system != 'Darwin'" }]
+torchvision = [
+    { index = "pytorch-cpu", marker = "platform_system != 'Darwin'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
