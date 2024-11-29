@@ -7,63 +7,27 @@ from pathlib import Path
 import torch
 from ray.train import get_checkpoint
 from torch import nn, optim
-from torch.utils.data import Subset, random_split
-from torchvision import datasets, transforms
 
-from .main_types import CIFAR
+from torch_practice.dataloading import load_data
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def load_data(data_dir: str = "./data") -> tuple[CIFAR, CIFAR]:
-    """Download CIFAR10 (10 classes) dataset.
-
-    Dataset is not downloaded again if it's available in `data_dir`.
-    """
-    transform = transforms.Compose(  # list of transformations.
-        [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))],
-    )
-
-    train_set = datasets.CIFAR10(
-        root=data_dir,
-        train=True,
-        download=True,
-        transform=transform,
-    )
-
-    test_set = datasets.CIFAR10(
-        root=data_dir,
-        train=False,
-        download=True,
-        transform=transform,
-    )
-
-    return train_set, test_set
-
-
-def to_gpu_if_available(net: nn.Module) -> str:
-    """Send to the GPU if available."""
+def to_device_available(net: nn.Module) -> tuple[nn.Module, str]:
+    """Send to device (GPU/MPS) if available."""
     device = "cpu"
     if torch.cuda.is_available():
-        logger.info("GPU is available")
-        device = "cuda:0"
+        device = "cuda"
         if torch.cuda.device_count() > 1:
             logger.info("Trying GPU in parallel.")
             net = nn.DataParallel(net)
-    net.to(device)
-    return device
-
-
-def split_train(train_set: CIFAR, train_frac: float = 0.8) -> tuple[Subset, Subset]:
-    """Split training set into train and validation."""
-    new_train_l = int(len(train_set) * train_frac)
-    val_l = len(train_set) - new_train_l
-    train_subset, val_subset = random_split(
-        train_set,
-        [new_train_l, val_l],
-    )
-    return train_subset, val_subset
+    elif torch.mps.is_available():
+        device = "mps"
+    msg = f"Sending network to {device}"
+    logger.info(msg)
+    net = net.to(device)
+    return net, device
 
 
 def reload_state(net: nn.Module, optimizer: optim.Optimizer) -> int:

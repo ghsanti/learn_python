@@ -1,6 +1,6 @@
 {
   "include": [
-    "src/**"
+    "src/"
   ],
   "exclude": [
     "**/node_modules",
@@ -15,4 +15,6 @@
   "reportMissingImports": "error",
   "reportMissingTypeStubs": false,
   "pythonVersion": "3.11",
+  "venvPath": ".",
+  "venv": ".venv"
 }

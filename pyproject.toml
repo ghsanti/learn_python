@@ -1,26 +1,66 @@
+# example https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
 [project]
-name = "torch-practice"
-version = "0.1.0"
-description = "Add your description here"
+name = "torch_practice"
+version = "0.0.1"
+description = "Practice Pytorch, Ray, and packaging."
+authors = [{ name = " Santiago Miranda", email = "santimir.me@gmail.com" }]
 readme = "README.md"
-requires-python = ">=3.11"
+license = { text = "MIT License" }
+requires-python = ">=3.10"
+keywords = ["sample project", "pytorch", "ray"]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: Unix",
+]
+
+
 dependencies = [
-    "pyright>=1.1.389",
-    "pytest>=8.3.3",
-    "ray[tune]>=2.39.0",
-    "ruff>=0.8.0",
+    "matplotlib>=3.9.2",
+    "ray[train,tune]>=2.39.0",
     "torch>=2.5.1",
+    "torchinfo>=1.8.0",
     "torchvision>=0.20.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ghsanti/learn_python"
+Repository = "https://github.com/ghsanti/learn_python"
+Issues = "https://github.com/ghsanti/learn_python/issues"
+Documentation = "https://readthedocs.org"
+Changelog = "https://github.com/ghsanti/learn_python/blob/main/CHANGELOG.md"
 
-[tool.uv.sources] # do not use index for Darwin (uses PyPI)
-torch = [{ index = "pytorch-cpu", marker = "platform_system != 'Darwin'" }]
-torchvision = [
-    { index = "pytorch-cpu", marker = "platform_system != 'Darwin'" },
-]
+[build-system]
+# other builds backends are setuptools etc 
+# normally setuptools uses setup.cfg, setup.py etc.
+# the build frontend (pip etc.) calls the backend.
+# and they make the wheels / `.whl` files.
+# those files are the ones distributed.
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
+[tool.hatch.build.targets.wheel]
+packages = ["src/torch_practice"]
+
+[project.optional-dependencies]
+# when installing use torch_practice[dev]
+dev = ["pre-commit>=4.0.1", "pyright>=1.1.389", "pytest>=8.3.3", "ruff>=0.8.0"]
+
+
+# [tool.uv.sources] # do not use index for Darwin (uses PyPI)
+# torch = [{ index = "pytorch-cpu", marker = "platform_system != 'Darwin'" }]
+# torchvision = [
+#     { index = "pytorch-cpu", marker = "platform_system != 'Darwin'" },
+# ]
+
+# [[tool.uv.index]]
+# name = "pytorch-cpu"
+# url = "https://download.pytorch.org/whl/cpu"
+# explicit = true
