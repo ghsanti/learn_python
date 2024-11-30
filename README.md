@@ -1,8 +1,116 @@
-Mini-project to learn Ray, PyTorch, and Python packaging
+![3.10|3.11](https://img.shields.io/badge/Python-3.10_|_3.11_|_3.12-blue)
+![devtools](https://img.shields.io/badge/astral-uv_ruff-orange)
+![test](https://img.shields.io/badge/test-pytest-blue)
+![precommit](https://img.shields.io/badge/pre_commit-blue)
+
+![main](https://img.shields.io/badge/version-0.0.1-red)
+
+Mini-project to learn:
+
+- Ray-Tune for Hyperparameter tuning
+- PyTorch to write some nets
+- Python packaging, distribution and publishing
+- Using some actions and devtools
+- Using Readme shields
+
+## Running it
+
+Recommended to do it on Colab first:
+
+```bash
+!pip install git+https://github.com/ghsanti/torch_practice -q
+```
+
+Then:
+
+```python
+python -m torch_practice.simple_train
+```
+
+Should start training with the default configuration.
+
+Otherwise, just useL
+
+```python
+from torch_practice.simple_train import train
+from torch_practice.default_config import default_config
+
+# change config, for example:
+# autocompletion will show you available properties.
+default_config["n_workers"] = 3
+
+# then train it.
+train(default_config)
+```
+
+<details>
+
+<summary>
+Config object "blueprint":
+</summary>
+
+```python
+class DAEConfig(TypedDict):
+  """Configuration Dictionary for DAE params.
+
+  Note: BatchNorm always runs, so there isn't a switch.
+  """
+
+  # runtime config
+  seed: int | None  # if an int, uses `torch.set_manual(seed)`
+  log_level: _LogLevel
+  data_dir: str
+  # fraction on train, fraction on test (must add to 1)
+  prob_split: tuple[float, float]
+  # n_workers for dataloaders
+  n_workers: int
+
+  # general configuration
+  layers: int  # Number of layers in the encoder/decoder.
+  growth: float  # Growth factor for channels across layers.
+  in_channels: int  # Number of input channels (e.g., 3 for RGB images).
+  lr: float  # learning rate
+  batch_size: int  # critical hyperparameter.
+  clip_gradient_norm: bool
+  clip_gradient_value: bool
+  epochs: int
+
+  # conv layers
+  init_out_channels: int  # initial output channels (1st conv.)
+  c_kernel: int  # Kernel size for convolution layers.
+  c_stride: int  # Stride for convolution layers.
+  c_activ: Callable  # activation function
+
+  # dropout layers
+  use_dropout: bool
+  dropout_rate: float
+
+  # pool layers
+  use_pool: bool
+  p_kernel: int  # Kernel size for pooling layers.
+  p_stride: int  # Stride for pooling layers.
+
+  # latent vector
+  latent_dimension: int
+  dense_activ: Callable  # activation function
+
+```
+
+</details>
+
+## Reproducibility
+
+From the [docs](https://pytorch.org/docs/stable/notes/randomness.html):
+
+> Completely reproducible results are not guaranteed across PyTorch releases, individual commits, or different platforms.
+
+To control the sources of randomness one can pass a seed to the configuration dictionary. This controls some ops and dataloading.
+
+You can add extra strategies if it's needed.
 
 ## Packaging
 
-This project uses Python>=3.11
+This project uses `Python>=3.10`
 
 It uses:
 

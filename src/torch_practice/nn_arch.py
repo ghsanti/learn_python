@@ -3,10 +3,11 @@
 import torch
 from torch import Tensor, nn
 
+from torch_practice.default_config import default_config
+
 # it seems that absolute imports are less problematic.
-from torch_practice.HP_tune_autoencoder.main_types import (
+from torch_practice.main_types import (
   DAEConfig,
-  default_config,
 )
 
 
@@ -86,13 +87,13 @@ class DynamicDecoder(nn.Module):
   """Create a flexible Decoder.
 
   Arguments:
-      decrements: reversed increments.
+      increments: IO_channels used to make the Encoder convolutions.
 
   """
 
   def __init__(
     self,
-    decrements: list[tuple[int, int]],
+    increments: list[tuple[int, int]],
     config: DAEConfig,
   ) -> None:
     super().__init__()
@@ -113,18 +114,9 @@ class DynamicDecoder(nn.Module):
     )
     self.dense = None
 
-    if config.get("use_pool"):
-      self.unpool = nn.MaxUnpool2d(
-        stride=config.get("p_stride"),
-        kernel_size=config.get("p_kernel"),
-      )
-    if config.get("use_dropout"):
-      rate = self.config.get("dropout_rate")
-      self.dropout = nn.Dropout(rate)
-
     # these aren't optional layers.
     self.tconvs, self.batch_norms = create_layers(
-      channels_list=decrements,
+      channels_list=increments,
       config=config,
       is_transpose=True,
     )
@@ -248,5 +240,5 @@ if __name__ == "__main__":
 
   config = default_config()  # you can tweak "config"
 
-  model = DynamicAE(config)  # Replace with your model
+  model = DynamicAE(config)
   summary(model, input_size=(1, 3, 32, 32), device="cpu")

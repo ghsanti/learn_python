@@ -1,9 +1,18 @@
 """Config object definition."""
 
+import typing
 from collections.abc import Callable
-from typing import TypedDict
+from typing import Literal, TypedDict
 
-import torch
+if typing.TYPE_CHECKING:
+  from torch.utils.data import DataLoader
+  from torchvision.datasets import CIFAR10
+
+  CIFAR = DataLoader[CIFAR10]
+  _LogLevel = Literal["DEBUG", "INFO", "WARN", "CRITICAL"]
+else:
+  CIFAR = None
+  _LogLevel = None
 
 
 class DAEConfig(TypedDict):
@@ -12,12 +21,24 @@ class DAEConfig(TypedDict):
   Note: BatchNorm always runs, so there isn't a switch.
   """
 
+  # runtime config
+  seed: int | None  # if an int, uses `torch.set_manual(seed)`
+  log_level: _LogLevel
+  data_dir: str
+  # fraction on train, fraction on test (must add to 1)
+  prob_split: tuple[float, float]
+  # n_workers for dataloaders
+  n_workers: int
+
   # general configuration
   layers: int  # Number of layers in the encoder/decoder.
   growth: float  # Growth factor for channels across layers.
   in_channels: int  # Number of input channels (e.g., 3 for RGB images).
   lr: float  # learning rate
   batch_size: int  # critical hyperparameter.
+  clip_gradient_norm: bool
+  clip_gradient_value: bool
+  epochs: int
 
   # conv layers
   init_out_channels: int  # initial output channels (1st conv.)
@@ -37,30 +58,3 @@ class DAEConfig(TypedDict):
   # latent vector
   latent_dimension: int
   dense_activ: Callable  # activation function
-
-
-def default_config() -> DAEConfig:
-  """Autoencoder default configuration."""
-  return {
-    # general
-    "growth": 2,
-    "in_channels": 3,
-    "init_out_channels": 24,
-    "layers": 5,
-    "lr": 0.001,
-    "batch_size": 6,
-    # convolution
-    "c_kernel": 2,
-    "c_stride": 1,
-    "c_activ": torch.nn.functional.leaky_relu,
-    # pool
-    "use_pool": False,
-    "p_kernel": 2,
-    "p_stride": 2,
-    # dropout
-    "use_dropout": True,
-    "dropout_rate": 0.3,
-    # dense
-    "latent_dimension": 128,
-    "dense_activ": torch.nn.functional.leaky_relu,
-  }
