@@ -5,8 +5,8 @@ from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
-from torch_practice.main_types import CIFAR, DAEConfig
-from torch_practice.utils import seed_worker
+from .main_types import CIFAR, DAEConfig
+from .utils import seed_worker
 
 
 def get_dataloaders(
@@ -49,7 +49,7 @@ def get_dataloaders(
   if seed is not None:
     gen = torch.Generator()
     gen.manual_seed(0)
-    s_fn = seed_worker
+    s_fn = seed_worker.seed_worker
 
   train_subset, eval_subset = random_split(train_set, config.get("prob_split"))
   train = DataLoader[CIFAR10](

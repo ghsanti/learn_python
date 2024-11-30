@@ -3,12 +3,10 @@
 import torch
 from torch import Tensor, nn
 
+# abs imports if can be __main__ (script)
 from torch_practice.default_config import default_config
-
-# it seems that absolute imports are less problematic.
-from torch_practice.main_types import (
-  DAEConfig,
-)
+from torch_practice.main_types import DAEConfig
+from torch_practice.nn_arch.create_nn_layers import create_layers
 
 
 class DynamicEncoder(nn.Module):
@@ -22,12 +20,12 @@ class DynamicEncoder(nn.Module):
 
   def __init__(
     self,
-    channels: list[tuple[int, int]],
+    channels: list[int],
     config: DAEConfig,
   ) -> None:
     super().__init__()
     self.config = config
-    self.dense = None
+    self.dense = nn.LazyLinear(config.get("latent_dimension"))
     self.pool = (
       nn.MaxPool2d(
         kernel_size=config.get("p_kernel"),
@@ -43,9 +41,9 @@ class DynamicEncoder(nn.Module):
       else nn.Identity()
     )
     self.convs, self.batch_norms = create_layers(
-      channels_list=channels,
+      channels,
+      config,
       is_transpose=False,
-      config=config,
     )
 
   def forward(
@@ -60,27 +58,29 @@ class DynamicEncoder(nn.Module):
         shapes: before each pooling, and before flattening.
 
     """
-    shapes, pool_indices = [], []
-    for c, b in zip(self.convs, self.batch_norms, strict=False):
-      shapes.append(("conv", x.size()))
-      x = self.config.get("c_activ")(b(c(x)))
+    dense_activation = self.config.get("dense_activ")
+    conv_activation = self.config.get("c_activ")
+
+    decoding_shapes, pool_indices = [], []
+
+    for conv, batch in zip(self.convs, self.batch_norms, strict=False):
+      # so this stores the output shape to decode to.
+      decoding_shapes.append(("conv", x.size()))
+      x = conv_activation(batch(conv(x)))
       x = self.dropout(x)
       if self.pool is not None:
-        shapes.append(("pool", x.size()))
+        decoding_shapes.append(("pool", x.size()))
         x, index = self.pool(x)
         pool_indices.append(index)
 
     # Flatten and send to dense layer.
-    shapes.append(("flatten", x.size()))  # unflattened size.
+    decoding_shapes.append(("flatten", x.size()))  # unflattened size.
     x = x.view(x.size(0), -1)
-    dense_i, dense_o = sum(x.shape[1:]), self.config.get("latent_dimension")
-    if self.dense is None:
-      self.dense = nn.Linear(dense_i, dense_o)
-    x = self.config.get("dense_activ")(self.dense(x))
-    shapes.append(("dense", (dense_i, dense_o)))
+    decoding_shapes.append(("dense", x.size()))
+    x = dense_activation(self.dense(x))
     x = self.dropout(x)
 
-    return x, pool_indices, shapes
+    return x, pool_indices, decoding_shapes
 
 
 class DynamicDecoder(nn.Module):
@@ -93,7 +93,7 @@ class DynamicDecoder(nn.Module):
 
   def __init__(
     self,
-    increments: list[tuple[int, int]],
+    channels: list[int],
     config: DAEConfig,
   ) -> None:
     super().__init__()
@@ -116,8 +116,8 @@ class DynamicDecoder(nn.Module):
 
     # these aren't optional layers.
     self.tconvs, self.batch_norms = create_layers(
-      channels_list=increments,
-      config=config,
+      channels,
+      config,
       is_transpose=True,
     )
 
@@ -137,6 +137,8 @@ class DynamicDecoder(nn.Module):
         shapes: configuration for each layer, to reverse the size / computation.
 
     """
+    dense_activation = self.config.get("dense_activ")
+    conv_activation = self.config.get("c_activ")
     indices = pool_indices
     c, p = -1, -1  # convolution, pool layers tracking.
     for i in range(len(shapes) - 1, -1, -1):
@@ -146,19 +148,22 @@ class DynamicDecoder(nn.Module):
         x = batch(conv(x, output_size=shape))
         if i == 0:  # last layer
           return x
-        x = self.config.get("c_activ")(x)
-        x = self.dropout(x)
+        x = self.dropout(conv_activation(x))
         c -= 1
       elif self.unpool is not None and name == "pool":
-        x = self.unpool(x, indices[p], output_size=shape)
+        x = self.unpool(  # type: ignore pyright bug
+          x,
+          indices[p],
+          output_size=shape,
+        )
         p -= 1
       elif name == "flatten":
         x = x.view(-1, *shape[1:])  # unflatten
       elif name == "dense":
         if self.dense is None:
-          self.dense = nn.Linear(shape[1], shape[0])
-        x = self.config.get("dense_activ")(self.dense(x))
-        x = self.dropout(x)
+          self.dense = nn.Linear(self.config.get("latent_dimension"), shape[1])
+        x = self.dense(x)
+        x = self.dropout(dense_activation(x))
 
     return x
 
@@ -171,74 +176,33 @@ class DynamicAE(nn.Module):
     config: DAEConfig,
   ) -> None:
     super().__init__()
-    self.increments: list[tuple[int, int]] = []
     self.config = config
-    in_channels = config.get("in_channels")
-    o_channels = config.get("init_out_channels")
+    # proto list of "filters" for each network.
+    self.channels: list[int] = [self.config.get("in_channels")]
 
+    # make the channels from user config.
+    o_channel = config.get("init_out_channels")
     for _i in range(config.get("layers")):
-      io_channels = (in_channels, o_channels)
-      self.increments.append(io_channels)
-      in_channels = o_channels
-      o_channels = int(round(o_channels * self.config.get("growth")))
+      self.channels.append(o_channel)
+      o_channel = int(round(o_channel * self.config.get("growth")))
 
     self.encoder = DynamicEncoder(
-      self.increments,
+      self.channels[1:],  # first is the image size.
       self.config,
     )
-    self.decoder = DynamicDecoder(self.increments, self.config)
+    # discarded channel is the input "image" for the decoder.
+    self.decoder = DynamicDecoder(self.channels[:-1], self.config)
+    # channels are reversed but reversed makes it easier for decoding.
 
   def forward(self, x: Tensor) -> Tensor:
     """Forward Pass for AE."""
-    x_encoded, pool_indices, shapes = self.encoder(x)
-    return self.decoder(x_encoded, pool_indices, shapes)
-
-
-def create_layers(
-  channels_list: list[tuple[int, int]],
-  config: DAEConfig,
-  *,
-  is_transpose: bool,
-) -> tuple[nn.ModuleList, nn.ModuleList]:
-  """Create the list of layers.
-
-  Arguments:
-    channels_list: list of (input, output)-channel numbers.
-    config: layer parameters.
-    is_transpose: whether we are making the transposed convolutions.
-
-  """
-  convs = nn.ModuleList()
-  batch = nn.ModuleList()
-  if is_transpose:
-    for in_dim, out_dim in channels_list:
-      convs.append(
-        nn.ConvTranspose2d(
-          in_channels=out_dim,
-          out_channels=in_dim,
-          kernel_size=config.get("c_kernel"),
-          stride=config.get("c_stride"),
-        ),
-      )
-      batch.append(nn.BatchNorm2d(in_dim))
-    return convs, batch
-  for in_dim, out_dim in channels_list:
-    convs.append(
-      nn.Conv2d(
-        in_channels=in_dim,
-        out_channels=out_dim,
-        kernel_size=config.get("c_kernel"),
-        stride=config.get("c_stride"),
-      ),
-    )
-    batch.append(nn.BatchNorm2d(out_dim))
-  return convs, batch
+    x, pool_indices, decoding_shapes = self.encoder(x)
+    return self.decoder(x, pool_indices, decoding_shapes)
 
 
 if __name__ == "__main__":
   from torchinfo import summary
 
   config = default_config()  # you can tweak "config"
-
   model = DynamicAE(config)
   summary(model, input_size=(1, 3, 32, 32), device="cpu")

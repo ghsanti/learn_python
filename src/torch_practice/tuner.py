@@ -41,7 +41,7 @@ def main(num_samples: int, max_num_epochs: int, gpus_per_trial: int):
   print(f"Best trial config: {best_trial.config}")
   print(f"Best trial final validation loss: {best_trial.last_result['loss']}")
   print(
-    f"Best trial final validation accuracy: {best_trial.last_result['accuracy']}"
+    f"Best trial final validation accuracy: {best_trial.last_result['accuracy']}",
   )
 
   # best_trained_model = DynamicAE(best_trial.config)

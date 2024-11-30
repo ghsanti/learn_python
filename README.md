@@ -21,6 +21,22 @@ Recommended to do it on Colab first:
 !pip install git+https://github.com/ghsanti/torch_practice -q
 ```
 
+Because PyTorch is quite hard to install for each version, you need to install it manually. Just see their matrix here.
+
+For Linux, on CPU using `uv`, with the `.venv` activated:
+
+```bash
+uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+```
+
+On Colab CPU probably just remove `uv`.
+
+For Colab GPUs, this should work (check the CUDA version.):
+
+```bash
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
 Then:
 
 ```python
@@ -29,7 +45,7 @@ python -m torch_practice.simple_train
 
 Should start training with the default configuration.
 
-Otherwise, just useL
+For custom configurations, write a simple script:
 
 ```python
 from torch_practice.simple_train import train
@@ -110,6 +126,10 @@ You can add extra strategies if it's needed.
 
 ## Packaging
 
+<details>
+<summary>
+Open here
+</summary>
 This project uses `Python>=3.10`
 
 It uses:
@@ -163,6 +183,8 @@ The _tests_ folder is outside the source folder, and won't be distributed. Other
 
 Lastly one needs _Readme.md_ and _LICENSE_
 
+</details>
+
 ## Dev
 
 ```bash
@@ -172,6 +194,8 @@ source .venv/bin/activate
 ```
 
 Select the `.venv` python-interpreter in VSCode.
+
+Files with "\_\_main\_\_" which can be executed as scripts need to use absolute imports (`from torch_practice import xyz`). The rest can use relative (`from .axes import xyz`).
 
 ## Run
 

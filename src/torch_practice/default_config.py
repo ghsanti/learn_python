@@ -1,6 +1,8 @@
+"""Runtime default configuration."""
+
 import torch
 
-from torch_practice.main_types import DAEConfig
+from .main_types import DAEConfig
 
 
 def default_config() -> DAEConfig:
@@ -16,10 +18,10 @@ def default_config() -> DAEConfig:
     # general-model
     "growth": 2,
     "in_channels": 3,
-    "init_out_channels": 24,
-    "layers": 5,
+    "init_out_channels": 8,
+    "layers": 4,
     "lr": 0.001,
-    "batch_size": 6,
+    "batch_size": 12,
     "clip_gradient_value": True,
     "clip_gradient_norm": True,
     # convolution
@@ -34,6 +36,6 @@ def default_config() -> DAEConfig:
     "use_dropout": True,
     "dropout_rate": 0.3,
     # dense
-    "latent_dimension": 128,
+    "latent_dimension": 96,
     "dense_activ": torch.nn.functional.leaky_relu,
   }

@@ -4,6 +4,8 @@ import typing
 from collections.abc import Callable
 from typing import Literal, TypedDict
 
+import torch
+
 if typing.TYPE_CHECKING:
   from torch.utils.data import DataLoader
   from torchvision.datasets import CIFAR10
@@ -44,7 +46,7 @@ class DAEConfig(TypedDict):
   init_out_channels: int  # initial output channels (1st conv.)
   c_kernel: int  # Kernel size for convolution layers.
   c_stride: int  # Stride for convolution layers.
-  c_activ: Callable  # activation function
+  c_activ: Callable[[torch.Tensor], torch.Tensor]  # activation function
 
   # dropout layers
   use_dropout: bool
@@ -57,4 +59,4 @@ class DAEConfig(TypedDict):
 
   # latent vector
   latent_dimension: int
-  dense_activ: Callable  # activation function
+  dense_activ: Callable[[torch.Tensor], torch.Tensor]  # activation function

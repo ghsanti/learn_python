@@ -10,8 +10,8 @@ from torch.optim import SGD
 from torch_practice.dataloading import get_dataloaders
 from torch_practice.default_config import default_config
 from torch_practice.main_types import DAEConfig
-from torch_practice.nn_arch import DynamicAE
-from torch_practice.utils import to_device_available
+from torch_practice.nn_arch.nn_arch import DynamicAE
+from torch_practice.utils.to_device_available import to_device_available
 
 logger = logging.getLogger(__package__)
 
@@ -23,7 +23,7 @@ def train(
 
   Loads CIFAR10 and trains the model.
   """
-  logger.setLevel(level=config.get("log_level"))
+  logging.basicConfig(level=config.get("log_level"))
   net = DynamicAE(config)
   device = to_device_available(net)
   optimizer = SGD(

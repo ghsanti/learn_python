@@ -7,11 +7,10 @@ from ray.train import Checkpoint, get_checkpoint
 from torch.nn import MSELoss
 from torch.optim import Adam
 
-from torch_practice.dataloading import get_dataloaders
-from torch_practice.main_types import DAEConfig
-from torch_practice.utils import to_device_available
-
+from .dataloading import get_dataloaders
+from .main_types import DAEConfig
 from .nn_arch import DynamicAE
+from .utils.to_device_available import to_device_available
 
 
 def trainer(config: DAEConfig) -> None:

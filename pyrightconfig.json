@@ -14,7 +14,7 @@
   "verboseOutput": true,
   "reportMissingImports": "error",
   "reportMissingTypeStubs": false,
-  "pythonVersion": "3.11",
+  "pythonVersion": "3.10",
   "venvPath": ".",
   "venv": ".venv"
 }
