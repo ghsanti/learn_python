@@ -1,18 +1,19 @@
+# Code Quality Checks.
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
     hooks:
-    -   id: check-yaml
-    -   id: end-of-file-fixer
-    -   id: trailing-whitespace
--   repo: https://github.com/astral-sh/ruff-pre-commit
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.1
     hooks:
-    -   id: ruff
+      - id: ruff # linter
         args:
-        - --fix
-    -   id: ruff-format
--   repo: https://github.com/RobertCraigie/pyright-python
+          - --fix
+      - id: ruff-format # format / pretty
+  - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.389
     hooks:
-    -   id: pyright
+      - id: pyright

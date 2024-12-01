@@ -217,6 +217,7 @@ if __name__ == "__main__":
   from torchinfo import summary
 
   lgr = logging.getLogger()
+  logging.basicConfig(level="DEBUG")  # default is warn
 
   config = default_config()  # you can tweak "config"
   model = DynamicAE(config)
@@ -230,22 +231,33 @@ if __name__ == "__main__":
     device = "cuda"
   elif torch.xpu.is_available():
     device = "xpu"
+  elif torch.mps.is_available():
+    device = "mps"
 
-  img = torch.randn(config.get("batch_size"), 3, 32, 32).to(device)
-  model = model.to(device)
-  with (
-    profile(
-      activities=[
-        ProfilerActivity.CPU,
-        ProfilerActivity.XPU,
-        ProfilerActivity.CUDA,
-        # ProfilerActivity.MPS # may be available in the future.
-      ],
-      record_shapes=True,
-      profile_memory=True,
-    ) as prof,
-    record_function("model_inference"),
-  ):
-    # with
-    model(img)
-  lgr.info(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
+  lgr.debug("Device %s", device)
+  if device == "mps":
+    import sys
+
+    # torch.mps.profiler.profile(mode='interval', wait_until_completed=False)
+    # disabled for now as I can't test.
+    lgr.critical("MPS profiling is disabled.")
+    sys.exit(0)
+  else:
+    img = torch.randn(config.get("batch_size"), 3, 32, 32).to(device)
+    model = model.to(device)
+    with (
+      profile(
+        activities=[
+          ProfilerActivity.CPU,
+          # ProfilerActivity.XPU,
+          # ProfilerActivity.CUDA,
+          # ProfilerActivity.MPS # may be available in the future.
+        ],
+        record_shapes=True,
+        profile_memory=True,
+      ) as prof,
+      record_function("model_inference"),
+    ):
+      # with
+      model(img)
+    lgr.info(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
