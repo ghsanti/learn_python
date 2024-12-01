@@ -39,7 +39,8 @@ target-version = "py310"
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 select = ["ALL"] # ignore what's needed.
 ignore = [
-  "D107", # __init__ docstring.
+  # "D107", # __init__ docstring.
+  "D101", # docs in public class.
 ]
 extend-select = ["I"]
 

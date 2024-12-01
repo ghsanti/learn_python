@@ -26,7 +26,7 @@ Because PyTorch is quite hard to install for each version, you need to install i
 For Linux, on CPU using `uv`, with the `.venv` activated:
 
 ```bash
-uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+uv pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
 ```
 
 On Colab CPU probably just remove `uv`.
@@ -34,7 +34,8 @@ On Colab CPU probably just remove `uv`.
 For Colab GPUs, this should work (check the CUDA version.):
 
 ```bash
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+MY_CUDA=cu118
+pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/${MY_CUDA}
 ```
 
 Then:

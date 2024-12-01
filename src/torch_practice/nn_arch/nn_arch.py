@@ -10,19 +10,18 @@ from torch_practice.nn_arch.create_nn_layers import create_layers
 
 
 class DynamicEncoder(nn.Module):
-  """Encoder.
-
-  Args:
-      increments: list of (dim_in,dim_out) tuples.
-      config: network configuration.
-
-  """
-
   def __init__(
     self,
     channels: list[int],
     config: DAEConfig,
   ) -> None:
+    """Specify the Encoder.
+
+    Args:
+        channels: list of `dim_out` ints.
+        config: network configuration.
+
+    """
     super().__init__()
     self.config = config
     self.dense = nn.LazyLinear(config.get("latent_dimension"))
@@ -34,6 +33,11 @@ class DynamicEncoder(nn.Module):
       )
       if self.config.get("use_pool")
       else None
+    )
+    self.dropout2d = (
+      nn.Dropout2d(self.config.get("dropout_rate"))
+      if self.config.get("use_dropout")
+      else nn.Identity()
     )
     self.dropout = (
       nn.Dropout(self.config.get("dropout_rate"))
@@ -67,7 +71,7 @@ class DynamicEncoder(nn.Module):
       # so this stores the output shape to decode to.
       decoding_shapes.append(("conv", x.size()))
       x = conv_activation(batch(conv(x)))
-      x = self.dropout(x)
+      x = self.dropout2d(x)
       if self.pool is not None:
         decoding_shapes.append(("pool", x.size()))
         x, index = self.pool(x)
@@ -84,18 +88,18 @@ class DynamicEncoder(nn.Module):
 
 
 class DynamicDecoder(nn.Module):
-  """Create a flexible Decoder.
-
-  Arguments:
-      increments: IO_channels used to make the Encoder convolutions.
-
-  """
-
   def __init__(
     self,
     channels: list[int],
     config: DAEConfig,
   ) -> None:
+    """Specify the Decoder.
+
+    Args:
+        channels: list of `dim_out` ints.
+        config: network configuration dictionary.
+
+    """
     super().__init__()
     self.config = config
 
@@ -106,6 +110,11 @@ class DynamicDecoder(nn.Module):
       )
       if self.config.get("use_pool")
       else None
+    )
+    self.dropout2d = (
+      nn.Dropout2d(self.config.get("dropout_rate"))
+      if self.config.get("use_dropout")
+      else nn.Identity()
     )
     self.dropout = (
       nn.Dropout(self.config.get("dropout_rate"))
@@ -131,15 +140,14 @@ class DynamicDecoder(nn.Module):
 
     Note: indices are not reversed. We loop backwards.
 
-    Arguments:
+    Args:
         x: input tensor
-        pool_indices: these are returned by pooling, used to unpool.
-        shapes: configuration for each layer, to reverse the size / computation.
+        pool_indices: returned by pooling, used to unpool.
+        shapes: output size for each layer.
 
     """
     dense_activation = self.config.get("dense_activ")
     conv_activation = self.config.get("c_activ")
-    indices = pool_indices
     c, p = -1, -1  # convolution, pool layers tracking.
     for i in range(len(shapes) - 1, -1, -1):
       name, shape = shapes[i]
@@ -148,12 +156,12 @@ class DynamicDecoder(nn.Module):
         x = batch(conv(x, output_size=shape))
         if i == 0:  # last layer
           return x
-        x = self.dropout(conv_activation(x))
+        x = self.dropout2d(conv_activation(x))
         c -= 1
       elif self.unpool is not None and name == "pool":
         x = self.unpool(  # type: ignore pyright bug
           x,
-          indices[p],
+          pool_indices[p],
           output_size=shape,
         )
         p -= 1
@@ -161,20 +169,23 @@ class DynamicDecoder(nn.Module):
         x = x.view(-1, *shape[1:])  # unflatten
       elif name == "dense":
         if self.dense is None:
-          self.dense = nn.Linear(self.config.get("latent_dimension"), shape[1])
-        x = self.dense(x)
-        x = self.dropout(dense_activation(x))
+          self.dense = nn.Linear(self.config.get("latent_dimension"), shape[-1])
+        x = self.dropout(dense_activation(self.dense(x)))
 
     return x
 
 
 class DynamicAE(nn.Module):
-  """Auto Encoder for simple Images."""
-
   def __init__(
     self,
     config: DAEConfig,
   ) -> None:
+    """Configure AutoEncoder.
+
+    Args:
+      config: net config dict.
+
+    """
     super().__init__()
     self.config = config
     # proto list of "filters" for each network.
@@ -201,8 +212,40 @@ class DynamicAE(nn.Module):
 
 
 if __name__ == "__main__":
+  import logging
+
   from torchinfo import summary
+
+  lgr = logging.getLogger()
 
   config = default_config()  # you can tweak "config"
   model = DynamicAE(config)
   summary(model, input_size=(1, 3, 32, 32), device="cpu")
+
+  # simple profiling info
+  from torch.profiler import ProfilerActivity, profile, record_function
+
+  device = "cpu"
+  if torch.cuda.is_available():
+    device = "cuda"
+  elif torch.xpu.is_available():
+    device = "xpu"
+
+  img = torch.randn(config.get("batch_size"), 3, 32, 32).to(device)
+  model = model.to(device)
+  with (
+    profile(
+      activities=[
+        ProfilerActivity.CPU,
+        ProfilerActivity.XPU,
+        ProfilerActivity.CUDA,
+        # ProfilerActivity.MPS # may be available in the future.
+      ],
+      record_shapes=True,
+      profile_memory=True,
+    ) as prof,
+    record_function("model_inference"),
+  ):
+    # with
+    model(img)
+  lgr.info(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))

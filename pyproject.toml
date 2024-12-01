@@ -36,6 +36,14 @@ Issues = "https://github.com/ghsanti/learn_python/issues"
 Documentation = "https://readthedocs.org"
 Changelog = "https://github.com/ghsanti/learn_python/blob/main/CHANGELOG.md"
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=4.0.1",
+    "pyright>=1.1.389",
+    "pytest>=8.3.3",
+    "ruff>=0.8.1",
+]
+
 [build-system]
 # other builds backends are setuptools etc 
 # normally setuptools uses setup.cfg, setup.py etc.
