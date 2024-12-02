@@ -11,7 +11,7 @@ from torch_practice.dataloading import get_dataloaders
 from torch_practice.default_config import default_config
 from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch.nn_arch import DynamicAE
-from torch_practice.utils.to_device_available import to_device_available
+from torch_practice.utils.get_device_available import get_device_available
 
 logger = logging.getLogger(__package__)
 
@@ -25,7 +25,8 @@ def train(
   """
   logging.basicConfig(level=config.get("log_level"))
   net = DynamicAE(config)
-  device, xm = to_device_available(net)
+  device, xm = get_device_available(net)
+  net = net.to(device)
 
   optimizer = SGD(
     params=net.parameters(),
@@ -55,7 +56,6 @@ def train(
       optimizer.zero_grad()
       images = imgs.to(device)
       r = net(images)
-      print(net.device)
       loss = criterion(r, images)
       loss.backward()
       if config.get("clip_gradient_value"):
