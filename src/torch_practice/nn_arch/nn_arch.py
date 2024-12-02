@@ -172,7 +172,7 @@ class DynamicDecoder(nn.Module):
           self.dense = nn.Linear(
             self.config.get("latent_dimension"),
             shape[-1],
-          ).to(device)
+          ).to(self.device)
         x = self.dropout(dense_activation(self.dense(x)))
 
     return x
