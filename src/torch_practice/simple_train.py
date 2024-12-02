@@ -25,7 +25,8 @@ def train(
   """
   logging.basicConfig(level=config.get("log_level"))
   net = DynamicAE(config)
-  device = to_device_available(net)
+  device, xm = to_device_available(net)
+
   optimizer = SGD(
     params=net.parameters(),
     lr=config.get("lr"),
@@ -61,6 +62,8 @@ def train(
       if config.get("clip_gradient_norm"):
         torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=1.0)
       optimizer.step()
+      if xm is not None:
+        xm.mark_step()
       running_loss += loss.item()
     for imgs_ev, _ in evaluation:
       with torch.no_grad():

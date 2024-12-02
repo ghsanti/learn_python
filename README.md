@@ -9,11 +9,13 @@ Mini-project to learn:
 
 - Ray-Tune for Hyperparameter tuning
 - PyTorch to write some nets
+- Learn profiling (`torch.profiling`) and tensorboard vis.
 - Python packaging, distribution and publishing
 - Using some actions and devtools
 - Using Readme shields
+- Save and Convert to ONNX to use on the web.
 
-## Running it
+## Set Up
 
 Recommended to do it on Colab first:
 
@@ -21,7 +23,7 @@ Recommended to do it on Colab first:
 !pip install git+https://github.com/ghsanti/torch_practice -q
 ```
 
-Because PyTorch is quite hard to install for each version, you need to install it manually. Just see their matrix here.
+Because PyTorch is quite hard to install for each version, you need to install it manually. [Check their matrix here.](https://pytorch.org/get-started/locally/)
 
 For Linux, on CPU using `uv`, with the `.venv` activated:
 
@@ -38,6 +40,34 @@ MY_CUDA=cu118
 pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/${MY_CUDA}
 ```
 
+
+### Speed up
+
+<details>
+<summary>
+Speed-up for **XLA** devices
+</summary>
+
+You can run it with XLA devices (both TPUs and GPUs) just needs an extra package:
+
+On colab just use (for GPUs):
+
+```bash
+!pip install torch==2.5.1 torch_xla==2.5.1 https://storage.googleapis.com/pytorch-xla-releases/wheels/cuda/12.1/torch_xla_cuda_plugin-2.5.1-py3-none-any.whl -q
+```
+
+For TPUs it should be ready to use, but otherwise run:
+
+
+```bash
+pip install torch_xla[tpu] -f https://storage.googleapis.com/libtpu-releases/index.html
+```
+
+Or check the `torch_xla` package.
+
+</details>
+
+## Run
 Then:
 
 ```python
@@ -188,23 +218,29 @@ Lastly one needs _Readme.md_ and _LICENSE_
 
 ## Dev
 
+<details>
+<summary>simple steps here</summary>
+1. Fork
+2. Clone your fork and run
 ```bash
-git clone ...
+pip install uv
+uv venv
+source .venv/bin/activate
 uv sync
+# install torch with pip as detailed at the top
+uv pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+```
+
+It's easier to checkout to a Codespace. It installs everything  for you, just activate the venv using:
+```bash
 source .venv/bin/activate
 ```
 
-Select the `.venv` python-interpreter in VSCode.
+In both cases, remember to select the `.venv` python-interpreter in VSCode.
 
 Files with "\_\_main\_\_" which can be executed as scripts need to use absolute imports (`from torch_practice import xyz`). The rest can use relative (`from .axes import xyz`).
 
-## Run
-
-You can run the project using:
-
-```python
-python -m path.to.file
-```
+</details>
 
 ## Build
 
