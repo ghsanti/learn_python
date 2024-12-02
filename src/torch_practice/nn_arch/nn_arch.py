@@ -169,7 +169,10 @@ class DynamicDecoder(nn.Module):
         x = x.view(-1, *shape[1:])  # unflatten
       elif name == "dense":
         if self.dense is None:
-          self.dense = nn.Linear(self.config.get("latent_dimension"), shape[-1])
+          self.dense = nn.Linear(
+            self.config.get("latent_dimension"),
+            shape[-1],
+          ).to(device)
         x = self.dropout(dense_activation(self.dense(x)))
 
     return x

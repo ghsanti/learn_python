@@ -22,7 +22,7 @@ def to_device_available(net: nn.Module) -> tuple[str, object]:
 
     logger.info("torch_xla found, computations will run on TPU.")
   except ModuleNotFoundError:
-    logger.warning("if you want to run in TPU, please install `torch_xla`")
+    logger.warning("Skipping XLA.")
     xm = None
 
   device = "cpu"

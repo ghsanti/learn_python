@@ -55,6 +55,7 @@ def train(
       optimizer.zero_grad()
       images = imgs.to(device)
       r = net(images)
+      print(net.device)
       loss = criterion(r, images)
       loss.backward()
       if config.get("clip_gradient_value"):
