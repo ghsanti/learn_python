@@ -41,7 +41,7 @@ def train(
   logger.info("Optimizer %s", optimizer.__class__.__name__)
   logger.info("Loss with %s", criterion.__class__.__name__)
 
-  train, evaluation, test = get_dataloaders(config)
+  train, evaluation, _ = get_dataloaders(config)
 
   logger.info("train batches: %s", len(train))
   logger.info("eval batches: %s", len(evaluation))
