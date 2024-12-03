@@ -8,7 +8,7 @@ from torch import nn
 logger = logging.getLogger(__name__)
 
 
-def get_device_available(net: nn.Module) -> tuple[str, object]:
+def get_device_available(net: nn.Module) -> str:
   """Send neural network to device (TPU/GPU/MPS/CPU) if available.
 
   Returns
@@ -16,19 +16,8 @@ def get_device_available(net: nn.Module) -> tuple[str, object]:
     device: where it was sent to.
 
   """
-  try:
-    import torch_xla  # type: ignore (Opt user install)
-    import torch_xla.core.xla_model as xm  # type: ignore (Opt user install)
-
-    logger.info("torch_xla found.")
-  except ModuleNotFoundError:
-    logger.warning("Skipping XLA.")
-    xm = None
-
   device = "cpu"
-  if xm is not None:
-    device = xm.xla_device()
-  elif torch.cuda.is_available():
+  if torch.cuda.is_available():
     device = "cuda"
     if torch.cuda.device_count() > 1:
       logger.info("Trying GPU in parallel.")
@@ -36,4 +25,4 @@ def get_device_available(net: nn.Module) -> tuple[str, object]:
   elif torch.mps.is_available():
     device = "mps"
   net = net.to(device)
-  return device, xm
+  return device

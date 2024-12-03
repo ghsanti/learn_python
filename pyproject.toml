@@ -56,8 +56,10 @@ packages = ["src/torch_practice"]
 
 # only current working solution, other than CPU install manually, same version.
 [tool.uv.sources]
-torch = [{ index = "pytorch-cpu" }]
-torchvision = [{ index = "pytorch-cpu" }]
+torch = [{ index = "pytorch-cpu", marker = "platform_system != 'Darwin'" }]
+torchvision = [
+    { index = "pytorch-cpu", marker = "platform_system != 'Darwin'" },
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
