@@ -20,7 +20,7 @@ def get_device_available(net: nn.Module) -> tuple[str, object]:
     import torch_xla  # type: ignore (Opt user install)
     import torch_xla.core.xla_model as xm  # type: ignore (Opt user install)
 
-    logger.info("torch_xla found, computations will run on TPU.")
+    logger.info("torch_xla found.")
   except ModuleNotFoundError:
     logger.warning("Skipping XLA.")
     xm = None

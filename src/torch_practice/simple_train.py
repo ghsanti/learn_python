@@ -96,7 +96,7 @@ if __name__ == "__main__":
     import torch
 
     torch.manual_seed(config.get("seed"))
-  config["layers"] = 3
+  config["layers"] = 2
   config["latent_dimension"] = 28
   train(config=config)
   e = time.time()
