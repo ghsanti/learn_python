@@ -18,37 +18,12 @@ Mini-project to learn:
 
 ## Set Up
 
+Importantly, the code does not run with XLA acceleration, it's unclear why at
+the moment. It does run fine on GPU and CPU, at least from Colab tests.
 
 ### Google Colab
 
-```bash
-!pip install git+https://github.com/ghsanti/torch_practice -q
-```
-
-Then,
-
-1. Import Accelerate
-2. Pass the training function
-
-
-```python
-from functools import partial
-
-from accelerate import notebook_launcher
-
-from torch_practice.simple_train import train
-from torch_practice.default_config import default_config
-
-config = default_config()
-config["n_workers"] = 3
-
-# then train it.
-train(config)
-
-notebook_launcher(partial(train, config))
-```
-
-It should use all the power, but may error in some settings (in TPU, for example.)
+Check out simple examples in the [Notebooks](./notebooks/).
 
 ### Elsewhere
 For Unix, on CPU using `uv`, with the `.venv` activated:
