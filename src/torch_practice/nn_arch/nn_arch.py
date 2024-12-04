@@ -103,9 +103,30 @@ class DynamicDecoder(nn.Module):
     super().__init__()
     self.config = config
 
+    self.unpool = (
+      nn.MaxUnpool2d(
+        kernel_size=config.get("p_kernel"),
+        stride=config.get("p_stride"),
+      )
+      if self.config.get("use_pool")
+      else None
+    )
+
+    self.dropout2d = (
+      nn.Dropout2d(self.config.get("dropout2d_rate"))
+      if self.config.get("use_dropout")
+      else nn.Identity()
+    )
+    self.dropout = (
+      nn.Dropout(self.config.get("dropout_rate_latent"))
+      if self.config.get("use_dropout_latent")
+      else nn.Identity()
+    )
+
+    self.dense = None
 
     # these aren't optional layers.
-    self.layers = create_layers(
+    self.tconvs, self.batch_norms = create_layers(
       channels,
       config,
       is_transpose=True,
