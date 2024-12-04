@@ -1,77 +1,100 @@
-Mini-project to learn Ray, PyTorch, and Python packaging
+![3.10|3.11](https://img.shields.io/badge/Python-3.10_|_3.11_|_3.12-blue)
+![devtools](https://img.shields.io/badge/astral-uv_ruff-orange)
+![test](https://img.shields.io/badge/test-pytest-blue)
+![precommit](https://img.shields.io/badge/pre_commit-blue)
 
-## Packaging
+![main](https://img.shields.io/badge/version-0.0.1-red)
 
-This project uses Python>=3.11
+Mini-project to learn:
 
-It uses:
+- Ray-Tune for Hyperparameter tuning
+- PyTorch to write some nets
+- Learn profiling (`torch.profiling`) and tensorboard vis.
+- Python packaging, distribution and publishing
+- Using some actions and devtools
+- Using Readme shields
+- Save and Convert to ONNX to use on the web.
+- Use Accelerate to delegate device selection code.
 
-- Project Management: [astral/uv](https://github.com/astral-sh/uv)
-  One needs to activate the _.venv_ as well.
+## Set Up
 
-  After activating, it's good to update _pip_ and _build_
+Importantly, the code does not run with XLA acceleration, it's unclear why at
+the moment. It does run fine on GPU and CPU, at least from Colab tests.
+
+### Google Colab
+
+Check out simple examples in the [Notebooks](./notebooks/).
+
+### Elsewhere
+For Unix, on CPU using `uv`, with the `.venv` activated:
+
+For the simplest case (CPU), you can run a training with:  
 
 ```python
-python3 -m pip install --upgrade pip
-python3 -m pip install --upgrade build
+python -m torch_practice.simple_train
 ```
 
-- Lint: [astral/ruff](https://github.com/astral-sh/ruff)
-  Own separate config file.
-- Type-Check: [pyright](https://github.com/microsoft/pyright)
-  Own separate config file. Install using _[nodejs]_ extra.
-- [pre-commit](https://pre-commit.com/)
-  Run `precommit install` after installing.
-- testing: [pytest](https://docs.pytest.org/)
-- pyproject: python project metadata.
-- Github Actions: integration for quality checks, PyPI publishing, and documentation publishing.
-- Docker for Codespaces integration (_.devcontainer_)
+For custom configurations, write a simple script:
 
-The project itself is a simple neural network in Pytorch, with Hyperparameter tuning using Ray Tune. It uses code from Pytorch examples.
+```python
+from torch_practice.simple_train import train
+from torch_practice.default_config import default_config
 
-For distributing packages one needs to:
+config = default_config()
+config["n_workers"] = 3
 
-1. Build it (uses _hatch_ in this repo.) Setuptools, Flitch, PDM are other build backends.
-
-One can then use any build frontend (like _build_), they will search for the build backend and create the distribution files.
-
-In this case, the file has:
-
-```toml
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+# then train it.
+train(config)
 ```
 
-To show which backend to use. The frontend installs _hatch_ if needed.
+For more complex hardware configurations, it should suffice to:
 
-2. Have the right project structure and metadata (_pyproject.toml_) 3. Publish it on PyPI (publicly or privately.)
+1. Activate the `.venv`
+2. Use `accelerate config` configurate the device.
+3. Train using `accelerate launch path/to/train.py`
 
-Key is to have _src/project_name_ and the name of the package in the _pyproject.toml_ file.
+And install whichever torch is needed [following the matrix versions.](https://pytorch.org/get-started/locally/) 
 
-Also have \_\_\_init.py\_\_\_ files in each subdirectory. **This allows the user to import the directory as if it were a module.**
 
-The _tests_ folder is outside the source folder, and won't be distributed. Other files outside source will be incl. in the source distribution (_tar.gz_ compression.)
+## Configuration
 
-Lastly one needs _Readme.md_ and _LICENSE_
+The "blueprint" is in the [DAEConfig, in this file.](./src/torch_practice/main_types.py)
+
+## Reproducibility
+
+From the [docs](https://pytorch.org/docs/stable/notes/randomness.html):
+
+> Completely reproducible results are not guaranteed across PyTorch releases, individual commits, or different platforms.
+
+To control the sources of randomness one can pass a seed to the configuration dictionary. This controls some ops and dataloading.
+
+You can add extra strategies if it's needed.
 
 ## Dev
 
+<details>
+<summary>simple steps here</summary>
+1. Fork
+2. Clone your fork and run
 ```bash
-git clone ...
+pip install uv
+uv venv
+source .venv/bin/activate
 uv sync
+# install torch with pip as detailed at the top
+uv pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+```
+
+It's easier to checkout to a Codespace. It installs everything  for you, just activate the venv using:
+```bash
 source .venv/bin/activate
 ```
 
-Select the `.venv` python-interpreter in VSCode.
+In both cases, remember to select the `.venv` python-interpreter in VSCode.
 
-## Run
+Files with "\_\_main\_\_" which can be executed as scripts need to use absolute imports (`from torch_practice import xyz`). The rest can use relative (`from .axes import xyz`).
 
-You can run the project using:
-
-```python
-python -m path.to.file
-```
+</details>
 
 ## Build
 
