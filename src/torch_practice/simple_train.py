@@ -32,7 +32,7 @@ def train(
   net = DynamicAE(config)
 
   # initialise the model with a random tensor
-  net(torch.randn(3, 32, 32))  # needs to take full input size from config
+  net(torch.randn(1, 3, 32, 32))  # needs to take full input size from config
   optimizer = SGD(
     params=net.parameters(),
     lr=config.get("lr"),
