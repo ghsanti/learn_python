@@ -49,8 +49,10 @@ class DAEConfig(TypedDict):
   c_activ: Callable[[torch.Tensor], torch.Tensor]  # activation function
 
   # dropout layers
-  use_dropout: bool
-  dropout_rate: float
+  use_dropout2d: bool  # for convolutions
+  dropout2d_rate: float
+  use_dropout_latent: bool
+  dropout_rate_latent: float  # dense layer before and after the latent vec.
 
   # pool layers
   use_pool: bool

@@ -33,8 +33,10 @@ def default_config() -> DAEConfig:
     "p_kernel": 2,
     "p_stride": 2,
     # dropout
-    "use_dropout": True,
-    "dropout_rate": 0.3,
+    "use_dropout2d": True,
+    "dropout2d_rate": 0.3,
+    "dropout_rate_latent": 0.3,
+    "use_dropout_latent": False,
     # dense
     "latent_dimension": 96,
     "dense_activ": torch.nn.functional.leaky_relu,
