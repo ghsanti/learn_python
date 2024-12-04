@@ -4,6 +4,7 @@ import logging
 import time
 
 import torch
+from accelerate import Accelerator
 from torch.nn import MSELoss
 from torch.optim import SGD
 
@@ -11,7 +12,8 @@ from torch_practice.dataloading import get_dataloaders
 from torch_practice.default_config import default_config
 from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch.nn_arch import DynamicAE
-from torch_practice.utils.get_device_available import get_device_available
+
+# from torch_practice.utils.get_device_available import get_device_available
 
 logger = logging.getLogger(__package__)
 
@@ -24,9 +26,10 @@ def train(
   Loads CIFAR10 and trains the model.
   """
   logging.basicConfig(level=config.get("log_level"))
+  accelerator = Accelerator()
+  device = accelerator.device
+
   net = DynamicAE(config)
-  device = get_device_available(net)
-  net = net.to(device)
 
   optimizer = SGD(
     params=net.parameters(),
@@ -35,13 +38,19 @@ def train(
   )
   criterion = MSELoss()
 
+  train, evaluation, _ = get_dataloaders(config)
+  net, optimizer, train, evaluation = accelerator.prepare(
+    net,
+    optimizer,
+    train,
+    evaluation,
+  )
+
   # logging.basicConfig(logging.WARN) skips info/debug msgs.
   logger.info("Network Configuration %s", config)
   logger.debug("Network Device %s", device)
   logger.info("Optimizer %s", optimizer.__class__.__name__)
   logger.info("Loss with %s", criterion.__class__.__name__)
-
-  train, evaluation, _ = get_dataloaders(config)
 
   logger.info("train batches: %s", len(train))
   logger.info("eval batches: %s", len(evaluation))
@@ -54,10 +63,9 @@ def train(
 
     for imgs, _ in train:
       optimizer.zero_grad()
-      images = imgs.to(device)
-      r = net(images)
-      loss = criterion(r, images)
-      loss.backward()
+      r = net(imgs)
+      loss = criterion(r, imgs)
+      accelerator.backward(loss)
       if config.get("clip_gradient_value"):
         torch.nn.utils.clip_grad_value_(net.parameters(), 1.0)
       if config.get("clip_gradient_norm"):
@@ -66,9 +74,8 @@ def train(
       running_loss += loss.item()
     for imgs_ev, _ in evaluation:
       with torch.no_grad():
-        images_ev = imgs_ev.to(device)
-        out = net(images_ev)
-        eval_loss += criterion(out, images_ev).item()
+        out = net(imgs_ev)
+        eval_loss += criterion(out, imgs_ev).item()
 
     # need to check how to log this stuff correctly
     # check_gradient_statistics(net.named_parameters())
