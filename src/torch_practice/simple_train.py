@@ -13,8 +13,6 @@ from torch_practice.default_config import default_config
 from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch.nn_arch import DynamicAE
 
-# from torch_practice.utils.get_device_available import get_device_available
-
 logger = logging.getLogger(__package__)
 
 
@@ -78,9 +76,6 @@ def train(
       with torch.no_grad():
         out = net(imgs_ev)
         eval_loss += criterion(out, imgs_ev).item()
-
-    # need to check how to log this stuff correctly
-    # check_gradient_statistics(net.named_parameters())
 
     loss = running_loss / len(train)
     msg = f"Epoch {i+1} of {epochs}, Train Loss: {loss:.3f}"
