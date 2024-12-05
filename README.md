@@ -5,32 +5,26 @@
 
 ![main](https://img.shields.io/badge/version-0.0.1-red)
 
-Mini-project to learn:
-
-- Ray-Tune for Hyperparameter tuning
-- PyTorch to write some nets
-- Learn profiling (`torch.profiling`) and tensorboard vis.
-- Python packaging, distribution and publishing
-- Using some actions and devtools
-- Using Readme shields
-- Save and Convert to ONNX to use on the web.
-- Use Accelerate to delegate device selection code.
+Simple PyTorch AutoEncoder to play with.
 
 ## Set Up
-
-Importantly, the code does not run with XLA acceleration, it's unclear why at
-the moment. It does run fine on GPU and CPU, at least from Colab tests.
 
 ### Google Colab
 
 Check out simple examples in the [Notebooks](./notebooks/).
 
 ### Elsewhere
-For Unix, on CPU using `uv`, with the `.venv` activated:
 
-For the simplest case (CPU), you can run a training with:  
+As an example:
 
-```python
+```bash
+python -m venv
+source .venv/bin/activate
+pip install git+https://github.com/ghsanti/torch_practice
+```
+
+One then can run it:
+```bash
 python -m torch_practice.simple_train
 ```
 
@@ -47,13 +41,8 @@ config["n_workers"] = 3
 train(config)
 ```
 
-For more complex hardware configurations, it should suffice to:
 
-1. Activate the `.venv`
-2. Use `accelerate config` configurate the device.
-3. Train using `accelerate launch path/to/train.py`
-
-And install whichever torch is needed [following the matrix versions.](https://pytorch.org/get-started/locally/) 
+This package installs **torch+cpu** by default. For other hardware please install [torch from the matrix versions.](https://pytorch.org/get-started/locally/)
 
 
 ## Configuration
@@ -62,13 +51,14 @@ The "blueprint" is in the [DAEConfig, in this file.](./src/torch_practice/main_t
 
 ## Reproducibility
 
+<details>
+<summary>basic practices</summary>
 From the [docs](https://pytorch.org/docs/stable/notes/randomness.html):
 
 > Completely reproducible results are not guaranteed across PyTorch releases, individual commits, or different platforms.
 
 To control the sources of randomness one can pass a seed to the configuration dictionary. This controls some ops and dataloading.
-
-You can add extra strategies if it's needed.
+</details>
 
 ## Dev
 
@@ -81,18 +71,16 @@ pip install uv
 uv venv
 source .venv/bin/activate
 uv sync
-# install torch with pip as detailed at the top
-uv pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+# add extra torch installs for non-cpu stacks.
 ```
 
-It's easier to checkout to a Codespace. It installs everything  for you, just activate the venv using:
+Checking out to a Codespace it installs everything. Activate the venv using:
 ```bash
 source .venv/bin/activate
 ```
 
-In both cases, remember to select the `.venv` python-interpreter in VSCode.
-
-Files with "\_\_main\_\_" which can be executed as scripts need to use absolute imports (`from torch_practice import xyz`). The rest can use relative (`from .axes import xyz`).
+* In both cases, remember to select the `.venv` python-interpreter in VSCode.
+* Use absolute imports.
 
 </details>
 
@@ -102,7 +90,3 @@ Files with "\_\_main\_\_" which can be executed as scripts need to use absolute 
 uv pip install --upgrade build
 uv build
 ```
-
-## PyTorch settings
-
-`autocast` isn't worth even trying, it makes things slower. One can check even unresolved issues. Ofc, this is for CPU, for other devices it probably changes.
