@@ -23,7 +23,6 @@ classifiers = [
 
 
 dependencies = [
-    "accelerate>=1.1.1",
     "matplotlib>=3.9.2",
     "ray[train,tune]>=2.39.0",
     "tensorboard>=2.18.0",
@@ -44,7 +43,7 @@ Changelog = "https://github.com/ghsanti/learn_python/blob/main/CHANGELOG.md"
 dev = ["pre-commit>=4.0.1", "pyright>=1.1.389", "pytest>=8.3.3", "ruff>=0.8.1"]
 
 [build-system]
-# other builds backends are setuptools etc 
+# other builds backends are setuptools etc
 # normally setuptools uses setup.cfg, setup.py etc.
 # the build frontend (pip etc.) calls the backend.
 # and they make the wheels / `.whl` files.

@@ -4,9 +4,36 @@ import torch
 from torch import Tensor, nn
 
 # abs imports if can be __main__ (script)
-from torch_practice.default_config import default_config
 from torch_practice.main_types import DAEConfig
-from torch_practice.nn_arch.create_nn_layers import create_layers
+
+
+def create_layers(
+  channels: list[int],
+  config: DAEConfig,
+  *,
+  is_transpose: bool,
+) -> tuple[nn.ModuleList, nn.ModuleList]:
+  """Create list of layers from channels.
+
+  Arguments:
+    channels: list of (input, output)-channel numbers.
+    config: layer parameters.
+    is_transpose: whether we are making the transposed convolutions.
+
+  """
+  convs = nn.ModuleList()
+  batch = nn.ModuleList()
+  layer = nn.LazyConvTranspose2d if is_transpose else nn.LazyConv2d
+  for in_dim in channels:
+    convs.append(
+      layer(
+        out_channels=in_dim,
+        kernel_size=config.get("c_kernel"),
+        stride=config.get("c_stride"),
+      ),
+    )
+    batch.append(nn.LazyBatchNorm2d())
+  return convs, batch
 
 
 class DynamicEncoder(nn.Module):
@@ -194,7 +221,7 @@ class DynamicAE(nn.Module):
     super().__init__()
     self.config = config
     # proto list of "filters" for each network.
-    self.channels: list[int] = [self.config.get("in_channels")]
+    self.channels: list[int] = [self.config.get("input_size")[0]]
 
     # make the channels from user config.
     o_channel = config.get("init_out_channels")
@@ -214,55 +241,3 @@ class DynamicAE(nn.Module):
     """Forward Pass for AE."""
     x, pool_indices, decoding_shapes = self.encoder(x)
     return self.decoder(x, pool_indices, decoding_shapes)
-
-
-if __name__ == "__main__":
-  import logging
-
-  from torchinfo import summary
-
-  lgr = logging.getLogger()
-  logging.basicConfig(level="DEBUG")  # default is warn
-
-  config = default_config()  # you can tweak "config"
-  model = DynamicAE(config)
-  summary(model, input_size=(1, 3, 32, 32), device="cpu")
-
-  # simple profiling info
-  from torch.profiler import ProfilerActivity, profile, record_function
-
-  device = "cpu"
-  if torch.cuda.is_available():
-    device = "cuda"
-  elif torch.xpu.is_available():
-    device = "xpu"
-  elif torch.mps.is_available():
-    device = "mps"
-
-  lgr.debug("Device %s", device)
-  if device == "mps":
-    import sys
-
-    # torch.mps.profiler.profile(mode='interval', wait_until_completed=False)
-    # disabled for now as I can't test.
-    lgr.critical("MPS profiling is disabled.")
-    sys.exit(0)
-  else:
-    img = torch.randn(config.get("batch_size"), 3, 32, 32).to(device)
-    model = model.to(device)
-    with (
-      profile(
-        activities=[
-          ProfilerActivity.CPU,
-          # ProfilerActivity.XPU,
-          # ProfilerActivity.CUDA,
-          # ProfilerActivity.MPS # may be available in the future.
-        ],
-        record_shapes=True,
-        profile_memory=True,
-      ) as prof,
-      record_function("model_inference"),
-    ):
-      # with
-      model(img)
-    lgr.info(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))

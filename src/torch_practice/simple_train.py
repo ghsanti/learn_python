@@ -1,17 +1,18 @@
 """Train the AE."""
 
 import logging
-import time
+import pprint
 
 import torch
-from accelerate import Accelerator
 from torch.nn import MSELoss
 from torch.optim import SGD
 
 from torch_practice.dataloading import get_dataloaders
-from torch_practice.default_config import default_config
 from torch_practice.main_types import DAEConfig
-from torch_practice.nn_arch.nn_arch import DynamicAE
+from torch_practice.nn_arch import DynamicAE
+from torch_practice.utils.get_device import get_device
+from torch_practice.utils.save_model import save_model
+from torch_practice.utils.track_loss import loss_improved
 
 logger = logging.getLogger(__package__)
 
@@ -24,13 +25,14 @@ def train(
   Loads CIFAR10 and trains the model.
   """
   logging.basicConfig(level=config.get("log_level"))
-  accelerator = Accelerator()
-  device = accelerator.device
+  if config.get("seed") is not None:
+    torch.manual_seed(config.get("seed"))
+  device = get_device()
 
   net = DynamicAE(config)
+  net(torch.randn(1, *config.get("input_size")))  # initialise all layers
 
-  # initialise the model with a random tensor
-  net(torch.randn(1, 3, 32, 32))  # needs to take full input size from config
+  net = net.to(device)  # done after initialising
   optimizer = SGD(
     params=net.parameters(),
     lr=config.get("lr"),
@@ -39,15 +41,9 @@ def train(
   criterion = MSELoss()
 
   train, evaluation, _ = get_dataloaders(config)
-  net, optimizer, train, evaluation = accelerator.prepare(
-    net,
-    optimizer,
-    train,
-    evaluation,
-  )
 
-  # logging.basicConfig(logging.WARN) skips info/debug msgs.
-  logger.info("Network Configuration %s", config)
+  logger.info("Network Configuration: ")
+  logger.info(pprint.pformat(config))
   logger.debug("Network Device %s", device)
   logger.info("Optimizer %s", optimizer.__class__.__name__)
   logger.info("Loss with %s", criterion.__class__.__name__)
@@ -55,51 +51,63 @@ def train(
   logger.info("train batches: %s", len(train))
   logger.info("eval batches: %s", len(evaluation))
 
-  train_loss = []
+  train_losses, eval_losses = [], []
+  best_eval_loss = (
+    float("inf") if config.get("loss_mode") == "min" else float("-inf")
+  )
   epochs = config.get("epochs")
+
   for i in range(epochs):
-    running_loss = 0.0
-    eval_loss = 0.0
+    train_loss, eval_loss = 0.0, 0.0
 
-    for imgs, _ in train:
+    net.train()
+    for images, _ in train:
+      imgs = images.to(device)
       optimizer.zero_grad()
-      r = net(imgs)
-      loss = criterion(r, imgs)
-      accelerator.backward(loss)
-      if config.get("clip_gradient_value"):
-        torch.nn.utils.clip_grad_value_(net.parameters(), 1.0)
-      if config.get("clip_gradient_norm"):
-        torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=1.0)
+      loss = criterion(net(imgs), imgs)
+      loss.backward()
       optimizer.step()
-      running_loss += loss.item()
-    for imgs_ev, _ in evaluation:
+      train_loss += loss.item()
+
+    net.eval()
+    for images_ev, _ in evaluation:
+      imgs_ev = images_ev.to(device)
       with torch.no_grad():
-        out = net(imgs_ev)
-        eval_loss += criterion(out, imgs_ev).item()
+        eval_loss += criterion(net(imgs_ev), imgs_ev).item()
 
-    loss = running_loss / len(train)
-    msg = f"Epoch {i+1} of {epochs}, Train Loss: {loss:.3f}"
-    logger.info(msg)
-
-    train_loss.append(loss)
+    train_loss = train_loss / len(train)
+    train_losses.append(train_loss)
 
     eval_loss = eval_loss / len(evaluation)
+    eval_losses.append(eval_loss)
+
+    if config.get("gradient_log"):
+      for name, param in net.named_parameters():
+        if param.grad is not None:
+          logging.debug("Gradient for %s: %s", name, param.grad.abs().max())
+
+    # print epoch logs
+    msg = f"Epoch {i+1} of {epochs}, Train Loss: {train_loss:.3f}"
+    logger.info(msg)
     logger.info("eval loss: %s", eval_loss)
 
-    for name, param in net.named_parameters():
-      if param.grad is not None:
-        logging.debug("Gradient for %s: %s", name, param.grad.abs().max())
+    # saving
+    name = f"{i}_{eval_loss:.3f}"
+    improved = loss_improved(
+      best_eval_loss,
+      eval_loss,
+      config,
+    )
+    if improved:
+      best_eval_loss = eval_loss
+    save = config.get("save")
+    if save == "all" or improved:
+      # save='best' deletes previous "best_" file.
+      save_model(net, name, config)
 
 
 if __name__ == "__main__":
-  s = time.time()
-  config = default_config()
-  if config.get("seed") is not None:
-    import torch
+  # for python debugger
+  from torch_practice.default_config import default_config
 
-    torch.manual_seed(config.get("seed"))
-  config["layers"] = 2
-  config["latent_dimension"] = 28
-  train(config=config)
-  e = time.time()
-  logger.info("%s : %s", config.get("batch_size"), e - s)
+  train(default_config())

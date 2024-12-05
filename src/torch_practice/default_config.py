@@ -11,19 +11,21 @@ def default_config() -> DAEConfig:
     # general runtime
     "seed": None,
     "log_level": "DEBUG",
+    "gradient_log": False,
     "data_dir": "./data",
     "epochs": 10,
     "prob_split": (0.8, 0.2),
     "n_workers": 2,
-    # general-model
+    "loss_mode": "min",
+    "save": "best_only",  # "all", "improvements", "best_only", None
+    "save_dir": "~/checkpoints",
+    # architecture
     "growth": 2,
-    "in_channels": 3,
-    "init_out_channels": 8,
-    "layers": 4,
+    "init_out_channels": 6,
+    "layers": 3,
     "lr": 0.001,
+    "input_size": (3, 32, 32),
     "batch_size": 12,
-    "clip_gradient_value": True,
-    "clip_gradient_norm": True,
     # convolution
     "c_kernel": 2,
     "c_stride": 1,

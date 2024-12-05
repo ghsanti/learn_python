@@ -16,6 +16,12 @@ else:
   CIFAR = None
   _LogLevel = None
 
+LossModeType = Literal[
+  "min",
+  "max",
+]
+Save = Literal["all", "improvements", "best_only"]
+
 
 class DAEConfig(TypedDict):
   """Configuration Dictionary for DAE params.
@@ -26,20 +32,32 @@ class DAEConfig(TypedDict):
   # runtime config
   seed: int | None  # if an int, uses `torch.set_manual(seed)`
   log_level: _LogLevel
+  gradient_log: bool  # log the max abs value for each gradient in the net.
   data_dir: str
   # fraction on train, fraction on test (must add to 1)
   prob_split: tuple[float, float]
   # n_workers for dataloaders
   n_workers: int
+  loss_mode: LossModeType
+  # min for minimisation (like MSE),
+  # max for maximisation (like accuracy).
+  save: Save | None
+  # all: all models, saves with `epoch_loss.pth`
+  # improvements: if improves wrt previous, `epoch_loss.pth`
+  # best: only best (overwrites files.)
+  # "improvements" and "best" both save "best.pth"
+  save_dir: str  # base dir to save the model to.
 
   # general configuration
   layers: int  # Number of layers in the encoder/decoder.
   growth: float  # Growth factor for channels across layers.
-  in_channels: int  # Number of input channels (e.g., 3 for RGB images).
-  lr: float  # learning rate
   batch_size: int  # critical hyperparameter.
-  clip_gradient_norm: bool
-  clip_gradient_value: bool
+  input_size: tuple[
+    int,
+    int,
+    int,
+  ]  # channels, height, width
+  lr: float  # learning rate
   epochs: int
 
   # conv layers
