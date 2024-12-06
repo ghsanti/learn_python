@@ -20,7 +20,7 @@ LossModeType = Literal[
   "min",
   "max",
 ]
-Save = Literal["all", "improvements", "best_only"]
+Save = Literal["all", "better"]
 
 
 class DAEConfig(TypedDict):
@@ -43,10 +43,10 @@ class DAEConfig(TypedDict):
   # max for maximisation (like accuracy).
   save: Save | None
   # all: all models
-  # improvements: if improves wrt previous
-  # best: only best
+  # better: if improves wrt previous
   # None: no saving.
-  save_every: int  # if save is "all", this saves only every `int` epochs.
+  save_every: int  # this saves only every `int` epochs.
+  # (compounds with "better" if set.)
   save_dir: str  # base dir to save the model to.
 
   # general configuration

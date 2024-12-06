@@ -4,24 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from torch_practice.default_config import default_config
-from torch_practice.utils.io import get_best_path, remove_old_best
-
-
-def test_remove_old_best() -> None:
-  """Test if a .pth file is removed.
-
-  Explicitly make a temporary directory rather than using
-  `tmp_path` fixture.
-  """
-  with TemporaryDirectory() as d:
-    tmp_path = Path(d)
-
-    file = tmp_path / "best_checkpoint_2.pth"
-    file.write_bytes(b"hello world")
-    remove_old_best(tmp_path, glob="non_existent_file$")  # no file removed
-    assert file.exists()  # should still be there
-    remove_old_best(tmp_path)
-    assert not file.exists()  # now should be removed
+from torch_practice.utils.io import get_best_path
 
 
 def test_get_best_path() -> None:

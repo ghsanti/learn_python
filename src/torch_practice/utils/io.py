@@ -17,27 +17,11 @@ from torch_practice.utils.track_loss import loss_improved
 logger = logging.getLogger(__package__)
 
 
-def remove_old_best(dirname: Path, glob: str = "best_*.pth") -> None:
-  """Remove one best checkpoint."""
-  try:
-    old_best = next(dirname.glob(glob))
-    logger.info("removing file %s", old_best)
-    old_best.unlink(missing_ok=True)
-  except StopIteration:
-    msg = f"No {glob} file found to remove at {dirname}"
-    logger.info(msg)
-
-
 def save_model(net: nn.Module, config: DAEConfig, name: str) -> None:
   """Save the model state dict."""
   dirname = Path(config.get("save_dir")).expanduser()
   dirname.mkdir(parents=True, exist_ok=True)
-  if config.get("save") == "best_only":
-    remove_old_best(dirname)
-    name = "best_" + name
-
-  suffix = "" if name.endswith((".pth", ".pt")) else ".pth"
-  fullname = dirname / Path(name + suffix)
+  fullname = dirname / Path(name).with_suffix(".pth")
   torch.save(net.state_dict(), fullname)
   logger.info('Saved "%s" to %s', config.get("save"), str(fullname))
 

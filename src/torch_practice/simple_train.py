@@ -25,6 +25,9 @@ def train(config: DAEConfig) -> None:
   logging.basicConfig(level=config.get("log_level"))
   if config.get("seed") is not None:
     torch.manual_seed(config.get("seed"))
+
+  config_sanity_check(config)
+
   device = get_device()
 
   net = DynamicAE(config)
@@ -43,7 +46,6 @@ def train(config: DAEConfig) -> None:
   # print general logs
   logs(config, optimizer, criterion, device)
 
-  train_losses, eval_losses = [], []
   best_eval_loss = None
   epochs = config.get("epochs")
 
@@ -66,10 +68,7 @@ def train(config: DAEConfig) -> None:
         eval_loss += criterion(net(imgs_ev), imgs_ev).item()
 
     train_loss = train_loss / len(train)
-    train_losses.append(train_loss)
-
     eval_loss = eval_loss / len(evaluation)
-    eval_losses.append(eval_loss)
 
     if config.get("gradient_log"):
       log_gradients(net)
@@ -85,12 +84,16 @@ def train(config: DAEConfig) -> None:
       eval_loss,
       config,
     )
-    if improved:
-      best_eval_loss = eval_loss
-    save = config.get("save")
-    if save is None:
+
+    # saving
+    if config.get("save") is None:
       continue
-    if (save == "all" and i + 1 % config.get("save_every")) or improved:
+
+    should_save = i + 1 % config.get("save_every")
+    if improved and should_save:
+      best_eval_loss = eval_loss
+
+    if should_save and (config.get("save") == "all" or improved):
       name = f"{i}_{eval_loss:.3f}"
       save_model(net, config, name)
 
@@ -114,6 +117,22 @@ def log_gradients(net: DynamicAE) -> None:
   for name, param in net.named_parameters():
     if param.grad is not None:
       logging.debug("Gradient for %s: %s", name, param.grad.abs().max())
+
+
+def config_sanity_check(config: DAEConfig) -> None:
+  """Check critical configuration keys."""
+  image_size = 3  # not channels, but CHW dimensions.
+  every = config["save_every"]
+  if not isinstance(every, int):
+    msg = f"'save_every' must be 'int'. Found {type(every)}"
+    raise TypeError(msg)
+  if every < 1:
+    msg = f"'save_every' must be > 1. Found {config['save_every']}"
+    raise ValueError(msg)
+  isize = len(config.get("input_size"))
+  if isize != image_size:
+    msg = f"'input_size' must be of length=3, found {isize}"
+    raise ValueError(msg)
 
 
 if __name__ == "__main__":

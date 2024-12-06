@@ -17,8 +17,8 @@ def default_config() -> DAEConfig:
     "prob_split": (0.8, 0.2),
     "n_workers": 2,
     "loss_mode": "min",
-    "save": "best_only",  # "all", "improvements", "best_only", None
-    "save_every": 10,  # only used if save is "all", "save every" n epochs.
+    "save": "better",  # None never saves.
+    "save_every": 3,  # 1 saves every epoch
     "save_dir": "~/checkpoints",
     # architecture
     "growth": 2,
