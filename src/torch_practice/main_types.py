@@ -42,10 +42,11 @@ class DAEConfig(TypedDict):
   # min for minimisation (like MSE),
   # max for maximisation (like accuracy).
   save: Save | None
-  # all: all models, saves with `epoch_loss.pth`
-  # improvements: if improves wrt previous, `epoch_loss.pth`
-  # best: only best (overwrites files.)
-  # "improvements" and "best" both save "best.pth"
+  # all: all models
+  # improvements: if improves wrt previous
+  # best: only best
+  # None: no saving.
+  save_every: int  # if save is "all", this saves only every `int` epochs.
   save_dir: str  # base dir to save the model to.
 
   # general configuration

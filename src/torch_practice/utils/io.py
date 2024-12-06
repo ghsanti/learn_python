@@ -24,7 +24,8 @@ def remove_old_best(dirname: Path, glob: str = "best_*.pth") -> None:
     logger.info("removing file %s", old_best)
     old_best.unlink(missing_ok=True)
   except StopIteration:
-    logger.info("No `best_*` file found to remove at %s", dirname)
+    msg = f"No {glob} file found to remove at {dirname}"
+    logger.info(msg)
 
 
 def save_model(net: nn.Module, config: DAEConfig, name: str) -> None:
@@ -35,7 +36,7 @@ def save_model(net: nn.Module, config: DAEConfig, name: str) -> None:
     remove_old_best(dirname)
     name = "best_" + name
 
-  suffix = "" if name.endswith(("pth", "pt")) else "pth"
+  suffix = "" if name.endswith((".pth", ".pt")) else ".pth"
   fullname = dirname / Path(name + suffix)
   torch.save(net.state_dict(), fullname)
   logger.info('Saved "%s" to %s', config.get("save"), str(fullname))
@@ -51,8 +52,7 @@ def get_best_path(dirname: Path, config: DAEConfig) -> Path:
   best_name = Path()
 
   path_names = dirname.glob("*.pth")  # may be empty raising error later on.
-  # so we "try"
-  try:
+  try:  # so we "try"
     for pathname in path_names:
       loss = float(pathname.stem.split("_")[-1])
       improved = loss_improved(best_loss, loss, config)

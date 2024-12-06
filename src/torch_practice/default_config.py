@@ -18,6 +18,7 @@ def default_config() -> DAEConfig:
     "n_workers": 2,
     "loss_mode": "min",
     "save": "best_only",  # "all", "improvements", "best_only", None
+    "save_every": 10,  # only used if save is "all", "save every" n epochs.
     "save_dir": "~/checkpoints",
     # architecture
     "growth": 2,

@@ -17,9 +17,7 @@ from torch_practice.utils.track_loss import loss_improved
 logger = logging.getLogger(__package__)
 
 
-def train(
-  config: DAEConfig,
-) -> None:
+def train(config: DAEConfig) -> None:
   """Train the AutoEncoder.
 
   Loads CIFAR10 and trains the model.
@@ -42,19 +40,11 @@ def train(
 
   train, evaluation, _ = get_dataloaders(config)
 
-  logger.info("Network Configuration: ")
-  logger.info(pprint.pformat(config))
-  logger.debug("Network Device %s", device)
-  logger.info("Optimizer %s", optimizer.__class__.__name__)
-  logger.info("Loss with %s", criterion.__class__.__name__)
-
-  logger.info("train batches: %s", len(train))
-  logger.info("eval batches: %s", len(evaluation))
+  # print general logs
+  logs(config, optimizer, criterion, device)
 
   train_losses, eval_losses = [], []
-  best_eval_loss = (
-    float("inf") if config.get("loss_mode") == "min" else float("-inf")
-  )
+  best_eval_loss = None
   epochs = config.get("epochs")
 
   for i in range(epochs):
@@ -82,9 +72,7 @@ def train(
     eval_losses.append(eval_loss)
 
     if config.get("gradient_log"):
-      for name, param in net.named_parameters():
-        if param.grad is not None:
-          logging.debug("Gradient for %s: %s", name, param.grad.abs().max())
+      log_gradients(net)
 
     # print epoch logs
     msg = f"Epoch {i+1} of {epochs}, Train Loss: {train_loss:.3f}"
@@ -92,7 +80,6 @@ def train(
     logger.info("eval loss: %s", eval_loss)
 
     # saving
-    name = f"{i}_{eval_loss:.3f}"
     improved = loss_improved(
       best_eval_loss,
       eval_loss,
@@ -101,9 +88,32 @@ def train(
     if improved:
       best_eval_loss = eval_loss
     save = config.get("save")
-    if save == "all" or improved:
-      # save='best' deletes previous "best_" file.
+    if save is None:
+      continue
+    if (save == "all" and i + 1 % config.get("save_every")) or improved:
+      name = f"{i}_{eval_loss:.3f}"
       save_model(net, config, name)
+
+
+def logs(
+  config: DAEConfig,
+  optimizer: object,
+  criterion: object,
+  device: str,
+) -> None:
+  """Print general logs at the start of optimisation."""
+  logger.info("Network Configuration: ")
+  logger.info(pprint.pformat(config))
+  logger.debug("Network Device %s", device)
+  logger.info("Optimizer %s", optimizer.__class__.__name__)
+  logger.info("Loss with %s", criterion.__class__.__name__)
+
+
+def log_gradients(net: DynamicAE) -> None:
+  """Log the maximum absolute value of each parameter tensor."""
+  for name, param in net.named_parameters():
+    if param.grad is not None:
+      logging.debug("Gradient for %s: %s", name, param.grad.abs().max())
 
 
 if __name__ == "__main__":

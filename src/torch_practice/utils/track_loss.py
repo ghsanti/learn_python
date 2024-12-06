@@ -8,14 +8,15 @@ logger = logging.getLogger(__package__)
 
 
 def loss_improved(
-  best: float,
+  best: float | None,
   new: float,
   config: DAEConfig,
 ) -> bool:
   """Compare current and previous loss."""
   mode = config.get("loss_mode")
 
-  result = (mode == "min" and new < best) or (mode == "max" and new > best)
-  if result is True:
-    logger.info("Old loss: %s - New loss: %s", best, new)
-  return result
+  if best is None:  # first iteration.
+    logger.debug("Setting `best` loss because it found None.")
+    best = float("inf") if mode == "min" else float("-inf")
+
+  return (mode == "min" and new < best) or (mode == "max" and new > best)
