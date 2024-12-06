@@ -11,7 +11,7 @@ from torch_practice.dataloading import get_dataloaders
 from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.get_device import get_device
-from torch_practice.utils.save_model import save_model
+from torch_practice.utils.io import save_model
 from torch_practice.utils.track_loss import loss_improved
 
 logger = logging.getLogger(__package__)
@@ -32,9 +32,9 @@ def train(
   net = DynamicAE(config)
   net(torch.randn(1, *config.get("input_size")))  # initialise all layers
 
-  net = net.to(device)  # done after initialising
+  net = net.to(device)  # done after initialising may prevent issues.
   optimizer = SGD(
-    params=net.parameters(),
+    params=net.parameters(),  # weights and biases
     lr=config.get("lr"),
     weight_decay=1e-4,
   )
@@ -103,7 +103,7 @@ def train(
     save = config.get("save")
     if save == "all" or improved:
       # save='best' deletes previous "best_" file.
-      save_model(net, name, config)
+      save_model(net, config, name)
 
 
 if __name__ == "__main__":
