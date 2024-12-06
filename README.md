@@ -70,11 +70,12 @@ To control the sources of randomness one can pass a seed to the configuration di
 pip install uv
 uv venv
 source .venv/bin/activate
-uv sync
-# add extra torch installs for non-cpu stacks.
+uv sync --all-extras
+# non-cpu users need extra torch installs.
 ```
 
 Checking out to a Codespace it installs everything. Activate the venv using:
+
 ```bash
 source .venv/bin/activate
 ```
