@@ -4,34 +4,31 @@ Pass the whole "config" makes it more robust.
 """
 
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import NamedTuple
 
 import torch
-from torch import nn
 
-from torch_practice.main_types import DAEConfig
+from torch_practice.main_types import LossModeType
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.track_loss import loss_improved
 
 logger = logging.getLogger(__package__)
 
 
-def save_model(net: nn.Module, config: DAEConfig, name: str) -> None:
+def save_model(net: DynamicAE, path: Path) -> None:
   """Save the model state dict."""
-  dirname = Path(config.get("save_dir")).expanduser()
-  dirname.mkdir(parents=True, exist_ok=True)
-  fullname = dirname / Path(name).with_suffix(".pth")
+  fullname = path.with_suffix(".pth")
   torch.save(net.state_dict(), fullname)
-  logger.info('Saved "%s" to %s', config.get("save"), str(fullname))
+  logger.info("Saved to %s", str(fullname))
 
 
-def get_best_path(dirname: Path, config: DAEConfig) -> Path:
+def get_best_path(dirname: Path, mode: LossModeType) -> Path:
   """Find best model if filename is not specified by user.
 
   Parses the filenames and gets best name from best loss.
   """
-  mode = config.get("loss_mode")
   best_loss = float("-inf") if mode == "max" else float("inf")
   best_name = Path()
 
@@ -39,7 +36,7 @@ def get_best_path(dirname: Path, config: DAEConfig) -> Path:
   try:  # so we "try"
     for pathname in path_names:
       loss = float(pathname.stem.split("_")[-1])
-      improved = loss_improved(best_loss, loss, config)
+      improved = loss_improved(best_loss, loss, mode)
       if improved:
         best_loss = loss
         best_name = pathname
@@ -56,16 +53,17 @@ def get_best_path(dirname: Path, config: DAEConfig) -> Path:
 
 def load_model(
   net: DynamicAE,
-  config: DAEConfig,
-  name: str | None = None,
+  save_dir: Path,
+  filename: str | None = None,
+  mode: LossModeType | None = None,
 ) -> NamedTuple:
   """Set the state dict to the model instance.
 
   Args:
-    net: instance of the model
-    config: configuration class
-    name: name within the `save_dir`. If `None`, it will load the best result
-    according to the loss value. It's best practice to pass a name here.
+    net: instance of the model.
+    save_dir: directory to save.
+    filename: the filename of the target model.
+    mode: the loss modes available.
 
   Returns:
     Does not return the model, only unexpected keys. The model is mutated.
@@ -73,14 +71,16 @@ def load_model(
   The directory it searches on, is the `save_dir` in the config file.
 
   """
-  dirname = Path(config.get("save_dir")).expanduser()
   fullname = None
-  if name is not None:
-    fullname = dirname / Path(name)
-  else:
+  if filename is not None:
+    fullname = save_dir / filename
+  else:  # filename is defined
+    if mode is None:
+      msg = f"If `filename=None`, `mode` must be defined. Found mode={mode}"
+      raise ValueError(msg)
     msg = "`name` is unspecified, finding best model..."
     logger.debug(msg)
-    fullname = get_best_path(dirname, config)
+    fullname = get_best_path(save_dir, mode)
 
   if fullname is None:
     msg = "The constructed file-fullname can't be None."
@@ -93,6 +93,15 @@ def load_model(
   logger.info(msg)
 
   return net.load_state_dict(torch.load(fullname, weights_only=True))
+
+
+def make_savedir(basedir: str) -> Path:
+  """Make a directory to save the model from the user basedir."""
+  date = datetime.now(timezone.utc).strftime("%Y_%m_%d_T%H_%M_%SZ")
+  savedir = Path(basedir) / date
+  savedir = savedir.expanduser()
+  savedir.mkdir(parents=True, exist_ok=False)
+  return savedir
 
 
 class LossesNotFoundError(Exception):

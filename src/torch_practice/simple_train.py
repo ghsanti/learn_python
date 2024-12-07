@@ -8,10 +8,11 @@ from torch.nn import MSELoss
 from torch.optim import SGD
 
 from torch_practice.dataloading import get_dataloaders
+from torch_practice.default_config import config_sanity_check
 from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.get_device import get_device
-from torch_practice.utils.io import save_model
+from torch_practice.utils.io import make_savedir, save_model
 from torch_practice.utils.track_loss import loss_improved
 
 logger = logging.getLogger(__package__)
@@ -27,6 +28,7 @@ def train(config: DAEConfig) -> None:
     torch.manual_seed(config.get("seed"))
 
   config_sanity_check(config)
+  savedir = make_savedir(config.get("save_basedir"))
 
   device = get_device()
 
@@ -78,24 +80,24 @@ def train(config: DAEConfig) -> None:
     logger.info(msg)
     logger.info("eval loss: %s", eval_loss)
 
-    # saving
     improved = loss_improved(
       best_eval_loss,
       eval_loss,
-      config,
+      config.get("loss_mode"),
     )
 
     # saving
-    if config.get("save") is None:
+    save_mode = config.get("save")
+    if save_mode is None:
       continue
 
     should_save = i + 1 % config.get("save_every")
     if improved and should_save:
       best_eval_loss = eval_loss
 
-    if should_save and (config.get("save") == "all" or improved):
-      name = f"{i}_{eval_loss:.3f}"
-      save_model(net, config, name)
+    if should_save and (save_mode == "all" or improved):
+      filepath = savedir / f"{i}_{eval_loss:.3f}"
+      save_model(net, filepath)
 
 
 def logs(
@@ -117,22 +119,6 @@ def log_gradients(net: DynamicAE) -> None:
   for name, param in net.named_parameters():
     if param.grad is not None:
       logging.debug("Gradient for %s: %s", name, param.grad.abs().max())
-
-
-def config_sanity_check(config: DAEConfig) -> None:
-  """Check critical configuration keys."""
-  image_size = 3  # not channels, but CHW dimensions.
-  every = config["save_every"]
-  if not isinstance(every, int):
-    msg = f"'save_every' must be 'int'. Found {type(every)}"
-    raise TypeError(msg)
-  if every < 1:
-    msg = f"'save_every' must be > 1. Found {config['save_every']}"
-    raise ValueError(msg)
-  isize = len(config.get("input_size"))
-  if isize != image_size:
-    msg = f"'input_size' must be of length=3, found {isize}"
-    raise ValueError(msg)
 
 
 if __name__ == "__main__":

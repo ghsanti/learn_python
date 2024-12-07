@@ -2,7 +2,7 @@
 
 import logging
 
-from torch_practice.main_types import DAEConfig
+from torch_practice.main_types import LossModeType
 
 logger = logging.getLogger(__package__)
 
@@ -10,11 +10,9 @@ logger = logging.getLogger(__package__)
 def loss_improved(
   best: float | None,
   new: float,
-  config: DAEConfig,
+  mode: LossModeType,
 ) -> bool:
   """Compare current and previous loss."""
-  mode = config.get("loss_mode")
-
   if best is None:  # first iteration.
     logger.debug("Setting `best` loss because it found None.")
     best = float("inf") if mode == "min" else float("-inf")

@@ -19,7 +19,7 @@ def default_config() -> DAEConfig:
     "loss_mode": "min",
     "save": "better",  # None never saves.
     "save_every": 3,  # 1 saves every epoch
-    "save_dir": "~/checkpoints",
+    "save_basedir": "~/checkpoints",
     # architecture
     "growth": 2,
     "init_out_channels": 6,
@@ -44,3 +44,23 @@ def default_config() -> DAEConfig:
     "latent_dimension": 96,
     "dense_activ": torch.nn.functional.leaky_relu,
   }
+
+
+def config_sanity_check(config: DAEConfig) -> None:
+  """Check critical configuration keys."""
+  image_size = 3  # not channels, but CHW dimensions.
+  every = config["save_every"]
+  save_mode = config["save"]
+  if not isinstance(every, int):
+    msg = f"'save_every' must be 'int'. Found {type(every)}"
+    raise TypeError(msg)
+  if every < 1:
+    msg = f"'save_every' must be > 1. Found {config['save_every']}"
+    raise ValueError(msg)
+  isize = len(config.get("input_size"))
+  if isize != image_size:
+    msg = f"'input_size' must be of length=3, found {isize}"
+    raise ValueError(msg)
+  if save_mode not in ["all", "better", None]:
+    msg = f"Supported save modes: 'all', 'better' and None. Found {save_mode} "
+    raise ValueError(msg)

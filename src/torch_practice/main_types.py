@@ -20,7 +20,7 @@ LossModeType = Literal[
   "min",
   "max",
 ]
-Save = Literal["all", "better"]
+SaveModeType = Literal["all", "better"]
 
 
 class DAEConfig(TypedDict):
@@ -41,13 +41,14 @@ class DAEConfig(TypedDict):
   loss_mode: LossModeType
   # min for minimisation (like MSE),
   # max for maximisation (like accuracy).
-  save: Save | None
+  save: SaveModeType | None
   # all: all models
   # better: if improves wrt previous
   # None: no saving.
   save_every: int  # this saves only every `int` epochs.
   # (compounds with "better" if set.)
-  save_dir: str  # base dir to save the model to.
+  save_basedir: str  # save within, using subdirectory with the timestamp,
+  # this is for safety. (avoids overwriting, reusing some dir, etc.)
 
   # general configuration
   layers: int  # Number of layers in the encoder/decoder.
