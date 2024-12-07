@@ -8,3 +8,4 @@ wheels/
 .venv
 data
 runs
+.coverage

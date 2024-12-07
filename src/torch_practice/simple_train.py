@@ -12,7 +12,7 @@ from torch_practice.default_config import config_sanity_check
 from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.get_device import get_device
-from torch_practice.utils.io import make_savedir, save_model
+from torch_practice.utils.io import make_savedir
 from torch_practice.utils.track_loss import loss_improved
 
 logger = logging.getLogger(__package__)
@@ -91,13 +91,14 @@ def train(config: DAEConfig) -> None:
     if save_mode is None:
       continue
 
-    should_save = i + 1 % config.get("save_every")
-    if improved and should_save:
+    save_time = ((i + 1) % config.get("save_every")) == 0
+    if improved and save_time:
       best_eval_loss = eval_loss
 
-    if should_save and (save_mode == "all" or improved):
-      filepath = savedir / f"{i}_{eval_loss:.3f}"
-      save_model(net, filepath)
+    if save_time and (save_mode == "all" or improved):
+      filepath = savedir / f"{i}_{eval_loss:.3f}.pth"
+      torch.save(net.state_dict(), filepath)
+      logger.info("Saved to %s", str(filepath))
 
 
 def logs(
@@ -125,4 +126,7 @@ if __name__ == "__main__":
   # for python debugger
   from torch_practice.default_config import default_config
 
-  train(default_config())
+  config = default_config()
+  config["layers"] = 1
+  config["latent_dimension"] = 12
+  train(config)

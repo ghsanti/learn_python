@@ -17,13 +17,6 @@ from torch_practice.utils.track_loss import loss_improved
 logger = logging.getLogger(__package__)
 
 
-def save_model(net: DynamicAE, path: Path) -> None:
-  """Save the model state dict."""
-  fullname = path.with_suffix(".pth")
-  torch.save(net.state_dict(), fullname)
-  logger.info("Saved to %s", str(fullname))
-
-
 def get_best_path(dirname: Path, mode: LossModeType) -> Path:
   """Find best model if filename is not specified by user.
 
@@ -96,7 +89,10 @@ def load_model(
 
 
 def make_savedir(basedir: str) -> Path:
-  """Make a directory to save the model from the user basedir."""
+  """Create timestamped directory within basedir.
+
+  This function will error if the new directory already exists.
+  """
   date = datetime.now(timezone.utc).strftime("%Y_%m_%d_T%H_%M_%SZ")
   savedir = Path(basedir) / date
   savedir = savedir.expanduser()

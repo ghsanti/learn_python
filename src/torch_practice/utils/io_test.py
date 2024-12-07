@@ -8,7 +8,6 @@ from torch_practice.utils.io import (
   get_best_path,
   load_model,
   make_savedir,
-  save_model,
 )
 
 
@@ -36,13 +35,19 @@ def test_get_best_path(tmp_path):
   assert path.stem.split("_")[-1] == "0.6"
 
 
-def test_io(tmp_path):
+def test_save_load(tmp_path):
   config = default_config()
-  # make sure we use the temporary path
-  dirname = make_savedir(tmp_path.resolve())
   config["layers"] = 1
   model = DynamicAE(config)
   model(torch.randn((1, *config.get("input_size"))))
   filename = "best.pth"
-  save_model(model, dirname / filename)
-  load_model(model, dirname, filename)
+  filepath = tmp_path / filename
+  torch.save(model.state_dict(), filepath)
+  assert filepath.exists()
+  loaded = load_model(model, tmp_path, filename)
+  assert isinstance(loaded, tuple)
+
+
+def test_make_savedir(tmp_path):
+  dirname = make_savedir(tmp_path)
+  assert "202" in dirname.name
