@@ -19,7 +19,7 @@ def default_config() -> DAEConfig:
     "loss_mode": "min",
     "save": "better",  # None never saves.
     "save_every": 3,  # 1 saves every epoch
-    "save_basedir": "~/checkpoints",
+    "save_basedir": "checkpoints",
     # architecture
     "growth": 2,
     "init_out_channels": 6,
