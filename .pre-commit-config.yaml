@@ -12,6 +12,7 @@ repos:
       - id: ruff # linter
         args:
           - --fix
+        always-run: true
       - id: ruff-format # format / pretty
 
   - repo: https://github.com/RobertCraigie/pyright-python
