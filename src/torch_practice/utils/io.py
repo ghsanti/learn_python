@@ -4,6 +4,7 @@ Pass the whole "config" makes it more robust.
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import NamedTuple
@@ -20,28 +21,33 @@ logger = logging.getLogger(__package__)
 def get_best_path(dirname: Path, mode: LossModeType) -> Path:
   """Find best model if filename is not specified by user.
 
-  Parses the filenames and gets best name from best loss.
+  The function uses a regex/pattern to find a float in the filename.
+  If it doesn't, it throws a "LossNotFoundError."
   """
-  best_loss = float("-inf") if mode == "max" else float("inf")
-  best_name = Path()
+  # match files like `abc_0.124.pth` (or `.pt`)
+  pattern = r".*_(\d+\.\d+)\.pth?$"
+  best_loss = None  # None is taken care of within loss_improved.
+  best_name = None
 
-  path_names = dirname.glob("*.pth")  # may be empty raising error later on.
-  try:  # so we "try"
-    for pathname in path_names:
-      loss = float(pathname.stem.split("_")[-1])
-      improved = loss_improved(best_loss, loss, mode)
-      if improved:
-        best_loss = loss
-        best_name = pathname
+  for file in dirname.iterdir():
+    if file.is_file():
+      match = re.match(pattern, file.name)
+      logger.debug("Found model file.")
+      if match:
+        msg = f"Found match from regex ({match.group(1)})."
+        logger.debug(msg)
+        loss = float(match.group(1))
+        improved = loss_improved(best_loss, loss, mode)
+        if improved:
+          best_loss = loss
+          best_name = file
 
-  except StopIteration as sti:
-    msg = "No model matches the pattern '*.pth'"
-    raise FileNotFoundError(msg) from sti
-
-  if best_name.name == "":
-    msg = "Could not parse loss from filename."
-    raise LossesNotFoundError(msg)
-  return dirname / best_name
+  if best_name is None:
+    msg = f"Could not parse loss from filenames in dir: {dirname}."
+    raise LossNotFoundError(msg)
+  msg = f"Best filename-model found {best_name}"
+  logger.debug(msg)
+  return best_name  # full path
 
 
 def load_model(
@@ -100,5 +106,5 @@ def make_savedir(basedir: str) -> Path:
   return savedir
 
 
-class LossesNotFoundError(Exception):
+class LossNotFoundError(Exception):
   pass
