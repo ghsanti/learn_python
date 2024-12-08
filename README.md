@@ -1,36 +1,93 @@
-Mini-project to learn some modern python.
+![3.10|3.11](https://img.shields.io/badge/Python-3.10_|_3.11_|_3.12-blue)
+![devtools](https://img.shields.io/badge/astral-uv_ruff-orange)
+![test](https://img.shields.io/badge/test-pytest-blue)
+![precommit](https://img.shields.io/badge/pre_commit-blue)
 
-It uses:
+![main](https://img.shields.io/badge/version-0.0.1-red)
 
-- Project Management: [astral/uv](https://github.com/astral-sh/uv)
-  One needs to activate the `.venv` as well.
-- Lint: [astral/ruff](https://github.com/astral-sh/ruff)
-  Own separate config file.
-- Type-Check: [pyright](https://github.com/microsoft/pyright)
-  Own separate config file. Install using _[nodejs]_ extra.
-- [pre-commit](https://pre-commit.com/)
-  Run `precommit install` after installing.
-- testing: [pytest](https://docs.pytest.org/)
-- pyproject: python project metadata.
-- Github Actions: integration for quality checks, PyPI publishing, and documentation publishing.
-- Docker for Codespaces integration (_.devcontainer_)
+Simple PyTorch AutoEncoder to play with.
 
-The project itself is a simple neural network in Pytorch, with Hyperparameter tuning using Ray Tune. It uses code from Pytorch examples.
+## Set Up
+
+### Google Colab
+
+Check out simple examples in the [Notebooks](./notebooks/).
+
+### Elsewhere
+
+As an example:
+
+```bash
+python -m venv
+source .venv/bin/activate
+pip install git+https://github.com/ghsanti/torch_practice
+```
+
+One then can run it:
+```bash
+python -m torch_practice.simple_train
+```
+
+For custom configurations, write a simple script:
+
+```python
+from torch_practice.simple_train import train
+from torch_practice.default_config import default_config
+
+config = default_config()
+config["n_workers"] = 3
+
+# then train it.
+train(config)
+```
+
+
+This package installs **torch+cpu** by default. For other hardware please install [torch from the matrix versions.](https://pytorch.org/get-started/locally/)
+
+
+## Configuration
+
+The "blueprint" is in the [DAEConfig, in this file.](./src/torch_practice/main_types.py)
+
+## Reproducibility
+
+<details>
+<summary>basic practices</summary>
+From the [docs](https://pytorch.org/docs/stable/notes/randomness.html):
+
+> Completely reproducible results are not guaranteed across PyTorch releases, individual commits, or different platforms.
+
+To control the sources of randomness one can pass a seed to the configuration dictionary. This controls some ops and dataloading.
+</details>
 
 ## Dev
 
+<details>
+<summary>simple steps here</summary>
+1. Fork
+2. Clone your fork and run
 ```bash
-git clone ...
-uv sync
+pip install uv
+uv venv
+source .venv/bin/activate
+uv sync --all-extras
+# non-cpu users need extra torch installs.
+```
+
+Checking out to a Codespace it installs everything. Activate the venv using:
+
+```bash
 source .venv/bin/activate
 ```
 
-Select the `.venv` python-interpreter in VSCode.
+* In both cases, remember to select the `.venv` python-interpreter in VSCode.
+* Use absolute imports.
 
-## Run
+</details>
 
-You can run the project using:
+## Build
 
 ```python
-python -m src.train
+uv pip install --upgrade build
+uv build
 ```

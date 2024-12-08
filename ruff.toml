@@ -29,19 +29,21 @@ exclude = [
 ]
 
 # Same as Black.
-line-length = 88
-indent-width = 4
+line-length = 80
+indent-width = 2
 
 # Assume Python 3.11
-target-version = "py311"
+target-version = "py310"
 
 [lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 select = ["ALL"] # ignore what's needed.
 ignore = [
-  "D107", # __init__ docstring.
+  # "D107", # __init__ docstring.
+  "D101", # docs in public class.
 ]
 extend-select = ["I"]
+
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
@@ -49,6 +51,10 @@ unfixable = []
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.per-file-ignores]
+"**/*_test.py" = ["S101", "D100", "ANN001", "D103", "ANN201"]
+"**/__init__.py" = ["D104"]
 
 [format]
 # Like Black, use double quotes for strings.
