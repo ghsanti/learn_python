@@ -68,7 +68,7 @@ To control the sources of randomness one can pass a seed to the configuration di
 2. Clone your fork and run
 ```bash
 pip install uv
-uv venv
+uv venv --python 3.10
 source .venv/bin/activate
 uv sync --all-extras
 # non-cpu users need extra torch installs.
