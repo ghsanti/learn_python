@@ -50,40 +50,25 @@ def get_best_path(dirname: Path, mode: LossModeType) -> Path:
   return best_name  # full path
 
 
-def load_model(
+def load_model_from_mode(
   net: DynamicAE,
   save_dir: Path,
-  filename: str | None = None,
-  mode: LossModeType | None = None,
+  mode: LossModeType,
 ) -> NamedTuple:
   """Set the state dict to the model instance.
 
   Args:
     net: instance of the model.
-    save_dir: directory to save.
-    filename: the filename of the target model.
+    save_dir: directory it searches on.
     mode: the loss modes available.
 
   Returns:
     Does not return the model, only unexpected keys. The model is mutated.
 
-  The directory it searches on, is the `save_dir` in the config file.
-
   """
-  fullname = None
-  if filename is not None:
-    fullname = save_dir / filename
-  else:  # filename is defined
-    if mode is None:
-      msg = f"If `filename=None`, `mode` must be defined. Found mode={mode}"
-      raise ValueError(msg)
-    msg = "`name` is unspecified, finding best model..."
-    logger.debug(msg)
-    fullname = get_best_path(save_dir, mode)
+  logger.debug("finding best model...")
+  fullname = get_best_path(save_dir, mode)
 
-  if fullname is None:
-    msg = "The constructed file-fullname can't be None."
-    raise ValueError(msg)
   if not fullname.exists():
     msg = f"File with name {fullname} was not found."
     raise FileNotFoundError(msg)
@@ -92,6 +77,25 @@ def load_model(
   logger.info(msg)
 
   return net.load_state_dict(torch.load(fullname, weights_only=True))
+
+
+def load_model_from_filepath(
+  net: DynamicAE,
+  path_to_model: Path,
+) -> NamedTuple:
+  """Set the state dict to the model instance.
+
+  Args:
+    net: instance of the model.
+    path_to_model: path to the saved `.pth` file.
+
+  Returns:
+    Does not return the model, only unexpected keys. The model is mutated.
+
+  """
+  return net.load_state_dict(
+    torch.load(path_to_model.resolve(), weights_only=True),
+  )
 
 
 def make_savedir(basedir: str) -> Path:

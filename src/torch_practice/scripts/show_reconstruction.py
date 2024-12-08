@@ -1,6 +1,7 @@
 """Show how the trained network reconstructs images."""
 
 import logging
+from pathlib import Path
 
 import torch
 import torchvision
@@ -9,15 +10,19 @@ from torchvision import transforms
 
 from torch_practice.default_config import default_config
 from torch_practice.nn_arch import DynamicAE
-from torch_practice.utils.io import load_model
+from torch_practice.utils.io import load_model_from_mode
 
 logging.basicConfig(level="DEBUG")
-writer = SummaryWriter("here")
+
 c = default_config()
 net = DynamicAE(c)
-net(torch.randn((1, 3, 32, 32)))
-load_model(net, c)
+net(torch.randn(1, *c.get("input_size")))
+
+model_dir = Path("checkpoints") / "2024_12_08_T15_17_16Z"
+load_model_from_mode(net, model_dir, c.get("loss_mode"))
 net.eval()
+
+writer = SummaryWriter("tboard_logs")
 
 data = torch.utils.data.DataLoader(
   torchvision.datasets.CIFAR10(
