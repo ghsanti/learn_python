@@ -51,11 +51,8 @@ def config_sanity_check(config: DAEConfig) -> None:
   image_size = 3  # not channels, but CHW dimensions.
   every = config["save_every"]
   save_mode = config["save"]
-  if not isinstance(every, int):
-    msg = f"'save_every' must be 'int'. Found {type(every)}"
-    raise TypeError(msg)
-  if every < 1:
-    msg = f"'save_every' must be > 1. Found {config['save_every']}"
+  if not isinstance(every, int) or every < 1:
+    msg = f"'save_every' must be a natural number. Found {type(every)}"
     raise ValueError(msg)
   isize = len(config.get("input_size"))
   if isize != image_size:
