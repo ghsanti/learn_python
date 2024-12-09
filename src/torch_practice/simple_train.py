@@ -8,11 +8,10 @@ from torch.nn import MSELoss
 from torch.optim import SGD
 
 from torch_practice.dataloading import get_dataloaders
-from torch_practice.default_config import config_sanity_check
 from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.get_device import get_device
-from torch_practice.utils.io import make_savedir
+from torch_practice.utils.io import Save
 from torch_practice.utils.track_loss import loss_improved
 
 logger = logging.getLogger(__package__)
@@ -27,11 +26,8 @@ def train(config: DAEConfig) -> None:
   if config["seed"] is not None:
     torch.manual_seed(config["seed"])
 
-  config_sanity_check(config)
-  savedir = make_savedir(config["save_basedir"])
-
+  saver = config["saver"]
   device = get_device()
-
   net = DynamicAE(config)
   net(torch.randn(1, *config["input_size"]))  # initialise all layers
 
@@ -87,18 +83,24 @@ def train(config: DAEConfig) -> None:
     )
 
     # saving
-    save_mode = config["save"]
-    if save_mode is None:
+    if saver.at is None:
       continue
 
-    save_time = ((i + 1) % config["save_every"]) == 0
-    if improved and save_time:
+    need_save = saver.save_time(epoch=i)
+    if improved and need_save:
       best_eval_loss = eval_loss
 
-    if save_time and (save_mode == "all" or improved):
-      filepath = savedir / f"{i}_{eval_loss:.3f}.pth"
-      torch.save(net.state_dict(), filepath)
-      logger.info("Saved to %s", str(filepath))
+    if need_save and (saver.at == "always" or improved):
+      if saver.mode == "inference":
+        saver.save_inference(net, i, eval_loss)
+      elif saver.mode == "training":
+        saver.save_checkpoint(
+          net,
+          epoch=i,
+          loss=criterion,
+          loss_value=train_loss,
+          optimizer=optimizer,
+        )
 
 
 def logs(
@@ -126,7 +128,14 @@ if __name__ == "__main__":
   # for python debugger
   from torch_practice.default_config import default_config
 
-  config = default_config()
+  # saver default configuration.
+  basedir = "checkpoints"
+  save_every = 3
+  save_for = "inference"
+  save_at = "better"
+  saver = Save(basedir, save_every, save_for, save_at)
+
+  config = default_config(saver)
   config["layers"] = 1
   config["latent_dimension"] = 12
   train(config)

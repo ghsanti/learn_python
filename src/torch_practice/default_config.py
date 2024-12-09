@@ -2,11 +2,18 @@
 
 import torch
 
+from torch_practice.utils.io import Save
+
 from .main_types import DAEConfig
 
 
-def default_config() -> DAEConfig:
-  """Runtime and model default configuration."""
+def default_config(saver: Save) -> DAEConfig:
+  """Full default configuration.
+
+  Args:
+  saver: an instance that configures how and when to save a model.
+
+  """
   return {
     # general runtime
     "seed": None,
@@ -17,9 +24,8 @@ def default_config() -> DAEConfig:
     "prob_split": (0.8, 0.2),
     "n_workers": 2,
     "loss_mode": "min",
-    "save": "better",  # None never saves.
-    "save_every": 3,  # 1 saves every epoch
-    "save_basedir": "checkpoints",
+    # save handler instance.
+    "saver": saver,
     # architecture
     "growth": 2,
     "init_out_channels": 6,
@@ -44,20 +50,3 @@ def default_config() -> DAEConfig:
     "latent_dimension": 96,
     "dense_activ": torch.nn.functional.leaky_relu,
   }
-
-
-def config_sanity_check(config: DAEConfig) -> None:
-  """Check critical configuration keys."""
-  image_size = 3  # not channels, but CHW dimensions.
-  every = config["save_every"]
-  save_mode = config["save"]
-  if not isinstance(every, int) or every < 1:
-    msg = f"'save_every' must be a natural number. Found {type(every)}"
-    raise ValueError(msg)
-  isize = len(config.get("input_size"))
-  if isize != image_size:
-    msg = f"'input_size' must be of length=3, found {isize}"
-    raise ValueError(msg)
-  if save_mode not in ["all", "better", None]:
-    msg = f"Supported save modes: 'all', 'better' and None. Found {save_mode} "
-    raise ValueError(msg)
