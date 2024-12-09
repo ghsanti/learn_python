@@ -13,6 +13,17 @@ Simple PyTorch AutoEncoder to play with.
 
 Check out simple examples in the [Notebooks](./notebooks/).
 
+For GPU use:
+
+```bash
+pip install torch_practice[cu124]@git+https://github.com/ghsanti/torch_practice.git
+```
+
+For CPU:
+```bash
+pip install torch_practice[cpu]@git+https://github.com/ghsanti/torch_practice.git
+```
+
 ### Elsewhere
 
 As an example:
@@ -20,7 +31,7 @@ As an example:
 ```bash
 python -m venv
 source .venv/bin/activate
-pip install git+https://github.com/ghsanti/torch_practice
+pip install torch_practice[cpu]@git+https://github.com/ghsanti/torch_practice
 ```
 
 One then can run it:
@@ -40,9 +51,6 @@ config["n_workers"] = 3
 # then train it.
 train(config)
 ```
-
-
-This package installs **torch+cpu** by default. For other hardware please install [torch from the matrix versions.](https://pytorch.org/get-started/locally/)
 
 
 ## Configuration
@@ -70,8 +78,7 @@ To control the sources of randomness one can pass a seed to the configuration di
 pip install uv
 uv venv --python 3.10
 source .venv/bin/activate
-uv sync # dev is synced by default.
-# non-cpu users need extra torch installs.
+uv sync --extra cpu # or cu124
 ```
 
 Checking out to a Codespace it installs everything. Activate the venv using:

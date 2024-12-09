@@ -1731,6 +1731,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "ray", extra = ["train", "tune"] },
     { name = "tensorboard" },
+    { name = "torchinfo" },
 ]
 
 [package.optional-dependencies]
@@ -1762,6 +1763,7 @@ requires-dist = [
     { name = "torch", marker = "platform_system == 'Darwin' and extra == 'cpu'", specifier = ">=2.5.1" },
     { name = "torch", marker = "platform_system != 'Darwin' and extra == 'cpu'", specifier = ">=2.5.1", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "torch-practice", extra = "cpu" } },
     { name = "torch", marker = "extra == 'cu124'", specifier = ">=2.5.1", index = "https://download.pytorch.org/whl/cu124", conflict = { package = "torch-practice", extra = "cu124" } },
+    { name = "torchinfo", specifier = ">=1.8.0" },
     { name = "torchvision", marker = "platform_system == 'Darwin' and extra == 'cpu'", specifier = ">=0.20.1" },
     { name = "torchvision", marker = "platform_system != 'Darwin' and extra == 'cpu'", specifier = ">=0.20.1", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "torch-practice", extra = "cpu" } },
     { name = "torchvision", marker = "extra == 'cu124'", specifier = ">=0.20.1", index = "https://download.pytorch.org/whl/cu124", conflict = { package = "torch-practice", extra = "cu124" } },
@@ -1774,6 +1776,15 @@ dev = [
     { name = "pyright", specifier = ">=1.1.390" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "ruff", specifier = ">=0.8.2" },
+]
+
+[[package]]
+name = "torchinfo"
+version = "1.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/d9/2b811d1c0812e9ef23e6cf2dbe022becbe6c5ab065e33fd80ee05c0cd996/torchinfo-1.8.0.tar.gz", hash = "sha256:72e94b0e9a3e64dc583a8e5b7940b8938a1ac0f033f795457f27e6f4e7afa2e9", size = 25880 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/72/25/973bd6128381951b23cdcd8a9870c6dcfc5606cb864df8eabd82e529f9c1/torchinfo-1.8.0-py3-none-any.whl", hash = "sha256:2e911c2918603f945c26ff21a3a838d12709223dc4ccf243407bce8b6e897b46", size = 23377 },
 ]
 
 [[package]]
