@@ -70,7 +70,7 @@ To control the sources of randomness one can pass a seed to the configuration di
 pip install uv
 uv venv --python 3.10
 source .venv/bin/activate
-uv sync --all-extras
+uv sync # dev is synced by default.
 # non-cpu users need extra torch installs.
 ```
 

@@ -26,11 +26,11 @@ dependencies = [
     "matplotlib>=3.9.2",
     "ray[train,tune]>=2.39.0",
     "tensorboard>=2.18.0",
-    "torch>=2.5.1",
-    "torchinfo>=1.8.0",
-    "torchvision>=0.20.1",
 ]
 
+[project.optional-dependencies]
+cpu = ["torch>=2.5.1", "torchvision>=0.20.1"]
+cu124 = ["torch>=2.5.1", "torchvision>=0.20.1"]
 
 [project.urls]
 Homepage = "https://github.com/ghsanti/learn_python"
@@ -38,15 +38,6 @@ Repository = "https://github.com/ghsanti/learn_python"
 Issues = "https://github.com/ghsanti/learn_python/issues"
 Documentation = "https://readthedocs.org"
 Changelog = "https://github.com/ghsanti/learn_python/blob/main/CHANGELOG.md"
-
-[project.optional-dependencies]
-dev = [
-    "coverage>=7.6.9",
-    "pre-commit>=4.0.1",
-    "pyright>=1.1.390",
-    "pytest>=8.3.3",
-    "ruff>=0.8.1",
-]
 
 [build-system]
 requires = ["hatchling"]
@@ -57,15 +48,35 @@ packages = ["src/torch_practice"]
 # Exclude any files ending with '_test.py'
 exclude = ["*_test.py"]
 
+# dev dependencies. --dev or use --group name for other groups.
+[dependency-groups]
+dev = [ # advantage: 'dev' is synced by default. `uv add --dev pkgname`
+    "coverage>=7.6.9",
+    "pre-commit>=4.0.1",
+    "pyright>=1.1.390",
+    "pytest>=8.3.4",
+    "ruff>=0.8.2",
+]
 
-# only current working solution, other than CPU install manually, same version.
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cu124" }]]
+
 [tool.uv.sources]
-torch = [{ index = "pytorch-cpu", marker = "platform_system != 'Darwin'" }]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin'" },
+    { index = "pytorch-cu124", extra = "cu124" },
+]
 torchvision = [
-    { index = "pytorch-cpu", marker = "platform_system != 'Darwin'" },
+    { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin'" },
+    { index = "pytorch-cu124", extra = "cu124" },
 ]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
 explicit = true

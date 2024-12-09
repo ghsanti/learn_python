@@ -5,7 +5,7 @@ import re
 import pytest
 import torch
 
-from torch_practice.default_config import default_config
+from torch_practice.default_config import DAEConfig, default_config
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.io import (
   LossNotFoundError,
@@ -14,6 +14,18 @@ from torch_practice.utils.io import (
   load_model_from_mode,
   make_savedir,
 )
+
+
+@pytest.fixture
+def minimal_model():
+  # configure minimal model
+  config = default_config()
+  config["layers"] = 1
+  # instantiate
+  model = DynamicAE(config)
+  # initiate
+  model(torch.randn((1, *config.get("input_size"))))
+  return model, config
 
 
 class TestGetBestPath:
@@ -47,14 +59,9 @@ class TestGetBestPath:
       get_best_path(tmp_path.resolve(), "min")
 
 
-def test_save_load(tmp_path):
-  # configure minimal model
-  config = default_config()
-  config["layers"] = 1
-  # instantiate
-  model = DynamicAE(config)
-  # initiate
-  model(torch.randn((1, *config.get("input_size"))))
+def test_save_load(tmp_path, minimal_model: tuple[DynamicAE, DAEConfig]):
+  model, config = minimal_model
+
   filepath = tmp_path / "best_0.221.pth"
   # save
   torch.save(model.state_dict(), filepath)
