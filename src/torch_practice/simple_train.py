@@ -23,22 +23,22 @@ def train(config: DAEConfig) -> None:
 
   Loads CIFAR10 and trains the model.
   """
-  logging.basicConfig(level=config.get("log_level"))
-  if config.get("seed") is not None:
-    torch.manual_seed(config.get("seed"))
+  logging.basicConfig(level=config["log_level"])
+  if config["seed"] is not None:
+    torch.manual_seed(config["seed"])
 
   config_sanity_check(config)
-  savedir = make_savedir(config.get("save_basedir"))
+  savedir = make_savedir(config["save_basedir"])
 
   device = get_device()
 
   net = DynamicAE(config)
-  net(torch.randn(1, *config.get("input_size")))  # initialise all layers
+  net(torch.randn(1, *config["input_size"]))  # initialise all layers
 
   net = net.to(device)  # done after initialising may prevent issues.
   optimizer = SGD(
     params=net.parameters(),  # weights and biases
-    lr=config.get("lr"),
+    lr=config["lr"],
     weight_decay=1e-4,
   )
   criterion = MSELoss()
@@ -49,7 +49,7 @@ def train(config: DAEConfig) -> None:
   logs(config, optimizer, criterion, device)
 
   best_eval_loss = None
-  epochs = config.get("epochs")
+  epochs = config["epochs"]
 
   for i in range(epochs):
     train_loss, eval_loss = 0.0, 0.0
@@ -72,7 +72,7 @@ def train(config: DAEConfig) -> None:
     train_loss = train_loss / len(train)
     eval_loss = eval_loss / len(evaluation)
 
-    if config.get("gradient_log"):
+    if config["gradient_log"]:
       log_gradients(net)
 
     # print epoch logs
@@ -83,15 +83,15 @@ def train(config: DAEConfig) -> None:
     improved = loss_improved(
       best_eval_loss,
       eval_loss,
-      config.get("loss_mode"),
+      config["loss_mode"],
     )
 
     # saving
-    save_mode = config.get("save")
+    save_mode = config["save"]
     if save_mode is None:
       continue
 
-    save_time = ((i + 1) % config.get("save_every")) == 0
+    save_time = ((i + 1) % config["save_every"]) == 0
     if improved and save_time:
       best_eval_loss = eval_loss
 
