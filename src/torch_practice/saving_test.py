@@ -6,7 +6,7 @@ from pathlib import Path
 import torch
 
 from torch_practice.default_config import default_config
-from torch_practice.loading import Loader
+from torch_practice.loading import load_model
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.saving import Save, SaveModeType
 
@@ -37,8 +37,9 @@ class TestSave:
     saved_path = saver.save_inference(model, 0, 0.221)
     assert saved_path.exists()
 
-    loader = Loader(model_type)
-    loader.from_filename(saved_path, model)
+    result = load_model(saved_path, weights_only=True)
+    assert isinstance(result, dict)
+    assert isinstance(model.load_state_dict(result), tuple)
 
   def test_save_checkpoint(self, tmp_path: Path):
     """Test saving a small PyTorch model."""
@@ -47,8 +48,21 @@ class TestSave:
     optimizer = torch.optim.SGD(model.parameters())
     criterion = torch.nn.MSELoss()
 
-    saved_path = saver.save_checkpoint(model, 0, criterion, 0.221, optimizer)
+    saved_path = saver.save_checkpoint(
+      net=model,
+      epoch=0,
+      loss=criterion,
+      loss_value=0.221,
+      optimizer=optimizer,
+    )
     assert saved_path.exists()
 
-    loader = Loader(model_type)
-    loader.from_filename(path_to_model=saved_path, net=None)
+    result = load_model(filepath=saved_path, weights_only=False)
+    assert isinstance(result, dict)
+
+    named_tuple = model.load_state_dict(result["model_state_dict"])
+    assert isinstance(named_tuple, tuple)
+    optimizer.load_state_dict(result["optimizer_state_dict"])
+    loss = result["loss"]
+    epoch = result["epoch"]
+    assert epoch == 0

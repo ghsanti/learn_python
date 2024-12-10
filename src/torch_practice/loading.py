@@ -1,15 +1,12 @@
-"""Handle model loading."""
+"""Utilities for model loading."""
 
 import logging
 import re
 from pathlib import Path
-from typing import NamedTuple
 
 import torch
 
 from torch_practice.main_types import LossModeType
-from torch_practice.nn_arch import DynamicAE
-from torch_practice.saving import SaveModeType
 from torch_practice.utils.date_format import (
   DirnameParsingError,
   assert_date_format,
@@ -21,96 +18,67 @@ logger = logging.getLogger(__package__)
 LOSS_PATTERN = r".*_(\d+\.\d+)\.pth?$"
 
 
-class Loader:
-  def __init__(
-    self,
-    model_mode: SaveModeType,
-  ) -> None:
-    """Load model or checkpoint.
+def load_model(filepath: Path, *, weights_only: bool) -> dict:
+  """Load inference or checkpoint statedict.
 
-    Utility class that goes hand in hand with Save.
+  Note that you then need to load the dicts into the instances.
 
-    Args:
-      model_mode: specify the type of saving carried out earlier.
+  See: https://pytorch.org/tutorials/beginner/saving_loading_models.html
 
-
-    """
-    self.model_mode = model_mode
-    self.assert_date_format = assert_date_format
-
-  def from_loss_mode(
-    self,
-    from_dir: Path,
-    mode: LossModeType,
-    net: DynamicAE | None,
-    *,
-    descend_one: bool,
-  ) -> NamedTuple:
-    """Load the state dict(s) of the saved model.
-
-    Args:
-      from_dir: base directory to search from.
-      mode: the loss modes available.
-      net: instance of the model. Not needed for full model loading.
-      descend_one: if True it descends to *first children only.*
-
-    Returns:
-      NamedTuple. _On inference, the model is mutated._
-
-      Note that, as long as you pass a different instance, it loads a new model.
-      So you can use the same loader for different models.
-
-    """
-    depth = 1 if descend_one else 0
-    logger.debug("finding best model...")
-    # recurses once if depth = 1
-    result = get_best_path(from_dir, mode, depth)
-
-    if result is None:
-      log = "Use `logger.basicConfig(level='DEBUG'[, force=True])` if needed."
-      logger.warning(log)
-      msg = f"Could not find a filename under {from_dir}"
-      raise FileNotFoundError(msg)
-
-    fullname, loss = result
-    msg = f"Found {fullname}, and loss {loss}."
-    logger.info(msg)
-
-    return self.from_filename(fullname, net)
-
-  def from_filename(
-    self,
-    path_to_model: Path,
-    net: DynamicAE | None,
-  ) -> NamedTuple:
-    """Checkpoint loading.
-
-    Args:
-      path_to_model: path to the saved `.pth` file.
-      net: instance of the model. Not needed for full model loading.
-
-    Returns:
-      Named tuple of stateful items (Model, Loss, Epoch, Optimizer.)
-
-    """
-    if self.model_mode == "inference":
-      checkpoint = torch.load(path_to_model, weights_only=True)
-      if net is not None:
-        msg = f"Loading the state dict into {net.__class__.__name__}"
-        logger.info(msg)
-        state_dict = net.load_state_dict(checkpoint)
-        net.eval()  # in case user forgets eval.
-        return state_dict
-      msg = "For inference mode, a model instance must be passed."
-      raise ValueError(msg)
-    return torch.load(path_to_model, weights_only=False)
+  For more features, use torch load directly. This a simple API.
+  """
+  return torch.load(filepath, weights_only=weights_only)
 
 
 class LossNotFoundError(Exception):
   pass
 
 
-def extract_compare(
+def get_best_path(
+  start_from: Path,
+  mode: LossModeType,
+  depth: int,
+) -> tuple[Path, float] | None:
+  """Find best model if filename is not specified by user.
+
+  Args:
+    start_from: where to start reading directories from.
+    mode: the loss mode (min, max,..)
+    depth: how many folders down the tree to look at.
+
+  It can be used to pass the name to the `load_model` function.
+  The function uses a regex/pattern to find a float in the filename.
+  If it doesn't, it throws a "LossNotFoundError."
+
+  """
+  # match files like `abc_0.124.pth` (or `.pt`)
+  loss_pattern = LOSS_PATTERN
+  best_name, best_loss = None, None
+
+  for file in start_from.iterdir():
+    if file.is_file():
+      result = _extract_compare(file, loss_pattern, best_loss, mode)
+      if result is not None:
+        best_name, best_loss = result
+    elif file.is_dir():
+      try:  # only parse timestamped directories.
+        assert_date_format(file)
+        if depth > 0:
+          depth -= 1
+          result = get_best_path(file, mode, depth)
+          if result is not None and loss_improved(best_loss, result[1], mode):
+            best_name, best_loss = result
+      except DirnameParsingError as err:
+        msg = f"Not a timestamped directory {file}. Error {err}"
+        logger.debug(msg)
+        continue
+
+  if best_name is not None and best_loss is not None:
+    return best_name, best_loss  # full path
+  return None
+
+
+def _extract_compare(
   file: Path,
   pattern: str,
   best_loss: float | None,
@@ -130,41 +98,4 @@ def extract_compare(
     improved = loss_improved(best_loss, loss, mode)
     if improved:
       return file, loss
-  return None
-
-
-def get_best_path(
-  save_dir: Path,
-  mode: LossModeType,
-  depth: int,
-) -> tuple[Path, float] | None:
-  """Find best model if filename is not specified by user.
-
-  The function uses a regex/pattern to find a float in the filename.
-  If it doesn't, it throws a "LossNotFoundError."
-  """
-  # match files like `abc_0.124.pth` (or `.pt`)
-  loss_pattern = LOSS_PATTERN
-  best_name, best_loss = None, None
-
-  for file in save_dir.iterdir():
-    if file.is_file():
-      result = extract_compare(file, loss_pattern, best_loss, mode)
-      if result is not None:
-        best_name, best_loss = result
-    elif file.is_dir():
-      try:  # only parse timestamped directories.
-        assert_date_format(file)
-        if depth > 0:
-          depth -= 1
-          result = get_best_path(file, mode, depth)
-          if result is not None and loss_improved(best_loss, result[1], mode):
-            best_name, best_loss = result
-      except DirnameParsingError as err:
-        msg = f"Not a timestamped directory {file}. Error {err}"
-        logger.debug(msg)
-        continue
-
-  if best_name is not None and best_loss is not None:
-    return best_name, best_loss  # full path
   return None
