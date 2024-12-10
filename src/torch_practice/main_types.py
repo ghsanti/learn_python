@@ -6,17 +6,18 @@ from typing import Literal, TypedDict
 
 import torch
 
-from torch_practice.utils.io import Save
-
 if typing.TYPE_CHECKING:
   from torch.utils.data import DataLoader
   from torchvision.datasets import CIFAR10
+
+  from torch_practice.saving import Save
 
   CIFAR = DataLoader[CIFAR10]
   _LogLevel = Literal["DEBUG", "INFO", "WARN", "CRITICAL"]
 else:
   CIFAR = None
   _LogLevel = None
+  Save = None
 
 LossModeType = Literal[
   "min",

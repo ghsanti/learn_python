@@ -2,7 +2,7 @@
 
 import torch
 
-from torch_practice.utils.io import Save
+from torch_practice.saving import Save
 
 from .main_types import DAEConfig
 
@@ -20,19 +20,20 @@ def default_config(saver: Save) -> DAEConfig:
     "log_level": "DEBUG",
     "gradient_log": False,
     "data_dir": "./data",
-    "epochs": 10,
     "prob_split": (0.8, 0.2),
     "n_workers": 2,
     "loss_mode": "min",
+    # HyperParameters (also the architecture to an extent.)
+    "batch_size": 12,
+    "lr": 0.001,
+    "epochs": 10,
     # save handler instance.
     "saver": saver,
     # architecture
     "growth": 2,
     "init_out_channels": 6,
     "layers": 3,
-    "lr": 0.001,
     "input_size": (3, 32, 32),
-    "batch_size": 12,
     # convolution
     "c_kernel": 2,
     "c_stride": 1,

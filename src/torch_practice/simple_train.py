@@ -10,8 +10,8 @@ from torch.optim import SGD
 from torch_practice.dataloading import get_dataloaders
 from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch import DynamicAE
+from torch_practice.saving import Save
 from torch_practice.utils.get_device import get_device
-from torch_practice.utils.io import Save
 from torch_practice.utils.track_loss import loss_improved
 
 logger = logging.getLogger(__package__)
@@ -76,31 +76,27 @@ def train(config: DAEConfig) -> None:
     logger.info(msg)
     logger.info("eval loss: %s", eval_loss)
 
-    improved = loss_improved(
-      best_eval_loss,
-      eval_loss,
-      config["loss_mode"],
-    )
-
     # saving
-    if saver.at is None:
-      continue
+    if saver.user_saving and saver.save_time(epoch=i):
+      improved = loss_improved(
+        best_eval_loss,
+        eval_loss,
+        config["loss_mode"],
+      )
+      if improved:
+        best_eval_loss = eval_loss
 
-    need_save = saver.save_time(epoch=i)
-    if improved and need_save:
-      best_eval_loss = eval_loss
-
-    if need_save and (saver.at == "always" or improved):
-      if saver.mode == "inference":
-        saver.save_inference(net, i, eval_loss)
-      elif saver.mode == "training":
-        saver.save_checkpoint(
-          net,
-          epoch=i,
-          loss=criterion,
-          loss_value=train_loss,
-          optimizer=optimizer,
-        )
+      if saver.at == "all" or improved:
+        if saver.mode == "inference":
+          saver.save_inference(net, i, eval_loss)
+        else:  # is not none within .user_saving
+          saver.save_checkpoint(
+            net,
+            epoch=i,
+            loss=criterion,
+            loss_value=train_loss,
+            optimizer=optimizer,
+          )
 
 
 def logs(
@@ -130,12 +126,12 @@ if __name__ == "__main__":
 
   # saver default configuration.
   basedir = "checkpoints"
-  save_every = 3
+  save_every = 2
   save_for = "inference"
-  save_at = "better"
+  save_at = "improve"
   saver = Save(basedir, save_every, save_for, save_at)
 
   config = default_config(saver)
-  config["layers"] = 1
+  config["layers"] = 3
   config["latent_dimension"] = 12
   train(config)
