@@ -63,6 +63,6 @@ class TestSave:
     named_tuple = model.load_state_dict(result["model_state_dict"])
     assert isinstance(named_tuple, tuple)
     optimizer.load_state_dict(result["optimizer_state_dict"])
-    loss = result["loss"]
+    _ = result["loss"]
     epoch = result["epoch"]
     assert epoch == 0
