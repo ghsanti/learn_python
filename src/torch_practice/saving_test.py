@@ -1,54 +1,54 @@
 """Handle model saving."""
 
 import logging
+from pathlib import Path
 
-import pytest
 import torch
 
 from torch_practice.default_config import default_config
 from torch_practice.loading import Loader
-from torch_practice.main_types import DAEConfig
 from torch_practice.nn_arch import DynamicAE
-from torch_practice.saving import Save
+from torch_practice.saving import Save, SaveModeType
 
 logger = logging.getLogger(__package__)
 
-LOSS_PATTERN = r".*_(\d+\.\d+)\.pth?$"
 
-
-@pytest.fixture
-def minimal_model(tmp_path):
+def minimal_model(
+  tmp_path: Path,
+  model_type: SaveModeType,
+) -> tuple[DynamicAE, Save]:
   # configure minimal model
-  config = default_config(Save(basedir=tmp_path))
+  saver = Save(basedir=tmp_path, save_mode=model_type)
+  config = default_config(saver)
   config["layers"] = 1
   # instantiate
   model = DynamicAE(config)
   # initiate
   model(torch.randn((1, *config.get("input_size"))))
-  return model, config
+  return model, saver
 
 
-def test_save_load(tmp_path, minimal_model: tuple[DynamicAE, DAEConfig]):
-  model, config = minimal_model
+class TestSave:
+  def test_save_state_dict(self, tmp_path: Path):
+    """Test saving a small PyTorch model."""
+    model_type = "inference"
+    model, saver = minimal_model(tmp_path, model_type)
 
-  loader = Loader(model_mode="inference")
-  filepath = tmp_path / "best_0.221.pth"
-  # save
-  torch.save(model.state_dict(), filepath)
-  assert filepath.exists()
+    saved_path = saver.save_inference(model, 0, 0.221)
+    assert saved_path.exists()
 
-  # load from filepath
-  loaded = loader.from_filename(filepath, model)
-  assert isinstance(loaded, tuple)
+    loader = Loader(model_type)
+    loader.from_filename(saved_path, model)
 
-  # load from directory + loss mode.
-  loaded_2 = loader.from_loss_mode(
-    tmp_path,
-    config.get("loss_mode"),
-    model,
-    descend_one=False,
-  )
-  assert isinstance(loaded_2, tuple)
+  def test_save_checkpoint(self, tmp_path: Path):
+    """Test saving a small PyTorch model."""
+    model_type = "training"
+    model, saver = minimal_model(tmp_path, model_type)
+    optimizer = torch.optim.SGD(model.parameters())
+    criterion = torch.nn.MSELoss()
 
-  saver = Save(tmp_path)
-  saver.save_inference(model, 0, 0.221)
+    saved_path = saver.save_checkpoint(model, 0, criterion, 0.221, optimizer)
+    assert saved_path.exists()
+
+    loader = Loader(model_type)
+    loader.from_filename(path_to_model=saved_path, net=None)

@@ -93,16 +93,17 @@ class Loader:
       Named tuple of stateful items (Model, Loss, Epoch, Optimizer.)
 
     """
-    checkpoint = torch.load(path_to_model, weights_only=True)
     if self.model_mode == "inference":
+      checkpoint = torch.load(path_to_model, weights_only=True)
       if net is not None:
         msg = f"Loading the state dict into {net.__class__.__name__}"
         logger.info(msg)
-        return net.load_state_dict(checkpoint)
-      msg = "for inference mode, a model instance must be passed."
+        state_dict = net.load_state_dict(checkpoint)
+        net.eval()  # in case user forgets eval.
+        return state_dict
+      msg = "For inference mode, a model instance must be passed."
       raise ValueError(msg)
-    logger.info("Returning checkpoint.")
-    return checkpoint
+    return torch.load(path_to_model, weights_only=False)
 
 
 class LossNotFoundError(Exception):

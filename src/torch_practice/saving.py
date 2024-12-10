@@ -70,7 +70,7 @@ class Save:
     savedir.mkdir(parents=True, exist_ok=False)
     return savedir
 
-  def save_inference(self, net: DynamicAE, epoch: int, loss: float) -> None:
+  def save_inference(self, net: DynamicAE, epoch: int, loss: float) -> Path:
     """Save state_dict of model-only.
 
     This is useful to load for inference, not for retraining.
@@ -78,6 +78,7 @@ class Save:
     full_name = self.make_filepath(epoch, loss)
     torch.save(net.state_dict(), str(full_name))
     logger.info("Saved model state_dict to %s", str(full_name))
+    return full_name
 
   def save_checkpoint(
     self,
@@ -86,7 +87,7 @@ class Save:
     loss: object,
     loss_value: float,
     optimizer: torch.optim.Optimizer,
-  ) -> None:
+  ) -> Path:
     """Save all states.
 
     Note that here the loss is the loss class.
@@ -103,3 +104,4 @@ class Save:
       full_name,
     )
     logger.info("Saved checkpoint to %s", str(full_name))
+    return full_name
