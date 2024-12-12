@@ -8,7 +8,7 @@ from torch.nn import MSELoss
 from torch.optim import SGD
 
 from torch_practice.dataloading import get_dataloaders
-from torch_practice.main_types import DAEConfig
+from torch_practice.main_types import RunConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.saving import Save
 from torch_practice.utils.get_device import get_device
@@ -17,7 +17,7 @@ from torch_practice.utils.track_loss import loss_improved
 logger = logging.getLogger(__package__)
 
 
-def train(config: DAEConfig) -> None:
+def train(config: RunConfig) -> None:
   """Train the AutoEncoder.
 
   Loads CIFAR10 and trains the model.
@@ -27,8 +27,8 @@ def train(config: DAEConfig) -> None:
     torch.manual_seed(config["seed"])
 
   device = get_device()
-  net = DynamicAE(config)
-  net(torch.randn(1, *config["input_size"]))  # initialise all layers
+  net = DynamicAE(config["arch"])
+  net(torch.randn(1, *config["arch"]["input_size"]))  # initialise all layers
 
   net = net.to(device)  # done after initialising may prevent issues.
   optimizer = SGD(
@@ -95,7 +95,7 @@ def train(config: DAEConfig) -> None:
 
 
 def logs(
-  config: DAEConfig,
+  config: RunConfig,
   optimizer: object,
   criterion: object,
   device: str,
@@ -120,6 +120,6 @@ if __name__ == "__main__":
   from torch_practice.default_config import default_config
 
   config = default_config()
-  config["layers"] = 3
-  config["latent_dimension"] = 12
+  config["arch"]["layers"] = 3
+  config["arch"]["latent_dimension"] = 12
   train(config)

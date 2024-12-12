@@ -5,12 +5,12 @@ from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
-from .main_types import CIFAR, DAEConfig
+from .main_types import CIFAR, RunConfig
 from .utils import seed_worker
 
 
 def get_dataloaders(
-  config: DAEConfig,
+  config: RunConfig,
 ) -> tuple[CIFAR, CIFAR, CIFAR]:
   """Get CIFAR10 train,eval,test dataloaders.
 

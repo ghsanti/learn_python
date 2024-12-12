@@ -2,10 +2,10 @@
 
 import torch
 
-from .main_types import DAEConfig
+from torch_practice.main_types import RunConfig
 
 
-def default_config() -> DAEConfig:
+def default_config() -> RunConfig:
   """Full default configuration.
 
   Args:
@@ -31,25 +31,27 @@ def default_config() -> DAEConfig:
       "save_mode": "state_dict",
       "save_at": "improve",
     },
-    # architecture
-    "growth": 2,
-    "init_out_channels": 6,
-    "layers": 3,
-    "input_size": (3, 32, 32),
-    # convolution
-    "c_kernel": 2,
-    "c_stride": 1,
-    "c_activ": torch.nn.functional.leaky_relu,
-    # pool
-    "use_pool": False,
-    "p_kernel": 2,
-    "p_stride": 2,
-    # dropout
-    "use_dropout2d": True,
-    "dropout2d_rate": 0.3,
-    "dropout_rate_latent": 0.3,
-    "use_dropout_latent": False,
-    # dense
-    "latent_dimension": 96,
-    "dense_activ": torch.nn.functional.leaky_relu,
+    "arch": {
+      # architecture
+      "growth": 2,
+      "init_out_channels": 6,
+      "layers": 3,
+      "input_size": (3, 32, 32),
+      # convolution
+      "c_kernel": 2,
+      "c_stride": 1,
+      "c_activ": torch.nn.functional.leaky_relu,
+      # pool
+      "use_pool": False,
+      "p_kernel": 2,
+      "p_stride": 2,
+      # dropout
+      "use_dropout2d": True,
+      "dropout2d_rate": 0.3,
+      "dropout_rate_latent": 0.3,
+      "use_dropout_latent": False,
+      # dense
+      "latent_dimension": 96,
+      "dense_activ": torch.nn.functional.leaky_relu,
+    },
   }

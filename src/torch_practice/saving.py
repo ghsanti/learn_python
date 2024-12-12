@@ -28,7 +28,7 @@ class Save:
 
     Args:
         base_config:
-          basedir: path to base directory. Time-stamped subdir is created within.
+          basedir: path to base directory. Time-stamped subdir is created within
           save_every: saves every this number of epochs. Must be >0.
           save_mode: save for "training" or "inference".
           save_at: under which circumstances to save.

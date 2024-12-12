@@ -11,6 +11,7 @@ from torch_practice.loading import (
   load_full_model,
   load_state_dict,
 )
+from torch_practice.main_types import RunConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.saving import Save
 
@@ -28,7 +29,7 @@ logger = logging.getLogger(__package__)
 def minimal_model(
   tmp_path: Path,
   model_type: SaveModeType,
-) -> tuple[DynamicAE, DAEConfig]:
+) -> tuple[DynamicAE, RunConfig]:
   # configure minimal model
   config = default_config()
   saver_config: SaverBaseArgs = {
@@ -38,17 +39,17 @@ def minimal_model(
     "save_at": "all",  # all models every 3 runs.
   }
   config["saver"] = saver_config
-  config["layers"] = 1
+  config["arch"]["layers"] = 1
   # instantiate
-  model = DynamicAE(config)
+  model = DynamicAE(config["arch"])
   # initiate
-  model(torch.randn((1, *config.get("input_size"))))
+  model(torch.randn((1, *config["arch"]["input_size"])))
   return model, config
 
 
 class TestSave:
   def test_save_state_dict(self, tmp_path: Path):
-    """Test saving a small PyTorch model."""
+    """Test saving a state dict."""
     model_type = "state_dict"
     model, config = minimal_model(tmp_path, model_type)
 
