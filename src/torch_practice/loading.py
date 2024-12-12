@@ -3,10 +3,13 @@
 import logging
 import re
 from pathlib import Path
+from typing import NamedTuple
 
 import torch
 
 from torch_practice.main_types import LossModeType
+from torch_practice.nn_arch import DynamicAE
+from torch_practice.saving import SaveModeType
 from torch_practice.utils.date_format import (
   DirnameParsingError,
   assert_date_format,
@@ -18,33 +21,43 @@ logger = logging.getLogger(__package__)
 LOSS_PATTERN = r".*_(\d+\.\d+)\.pth?$"
 
 
-def load_model(filepath: Path, *, weights_only: bool) -> dict:
-  """Load inference or checkpoint statedict.
+def load_state_dict(net: DynamicAE, filepath: Path) -> NamedTuple:
+  """Load model state from state dict."""
+  return net.load_state_dict(torch.load(filepath, weights_only=True))
 
-  Note that you then need to load the dicts into the instances.
 
-  See: https://pytorch.org/tutorials/beginner/saving_loading_models.html
-
-  For more features, use torch load directly. This a simple API.
-  """
+def load_full_model(filepath: Path, *, weights_only: bool) -> dict:
+  """Load full model."""
   return torch.load(filepath, weights_only=weights_only)
+
+
+def load_torchscript(filepath: Path) -> dict:
+  """Load torchscript module."""
+  return torch.jit.load(filepath)
 
 
 class LossNotFoundError(Exception):
   pass
 
 
+def check_filename_mode(filepath: Path, mode: SaveModeType) -> bool:
+  """Check mode from filename."""
+  return filepath.name.startswith(mode)
+
+
 def get_best_path(
   start_from: Path,
-  mode: LossModeType,
+  loss_mode: LossModeType,
   depth: int,
+  save_mode: SaveModeType | None,
 ) -> tuple[Path, float] | None:
   """Find best model if filename is not specified by user.
 
   Args:
     start_from: where to start reading directories from.
-    mode: the loss mode (min, max,..)
+    loss_mode: the loss mode (min, max,..)
     depth: how many folders down the tree to look at.
+    save_mode: enables a simple filename check to filter models.
 
   It can be used to pass the name to the `load_model` function.
   The function uses a regex/pattern to find a float in the filename.
@@ -56,8 +69,11 @@ def get_best_path(
   best_name, best_loss = None, None
 
   for file in start_from.iterdir():
-    if file.is_file():
-      result = _extract_compare(file, loss_pattern, best_loss, mode)
+    match = (
+      check_filename_mode(file, save_mode) if save_mode is not None else False
+    )
+    if file.is_file() and match is not False:
+      result = _extract_compare(file, loss_pattern, best_loss, loss_mode)
       if result is not None:
         best_name, best_loss = result
     elif file.is_dir():
@@ -65,8 +81,12 @@ def get_best_path(
         assert_date_format(file)
         if depth > 0:
           depth -= 1
-          result = get_best_path(file, mode, depth)
-          if result is not None and loss_improved(best_loss, result[1], mode):
+          result = get_best_path(file, loss_mode, depth, save_mode)
+          if result is not None and loss_improved(
+            best_loss,
+            result[1],
+            loss_mode,
+          ):
             best_name, best_loss = result
       except DirnameParsingError as err:
         msg = f"Not a timestamped directory {file}. Error {err}"

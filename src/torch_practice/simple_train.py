@@ -26,7 +26,6 @@ def train(config: DAEConfig) -> None:
   if config["seed"] is not None:
     torch.manual_seed(config["seed"])
 
-  saver = config["saver"]
   device = get_device()
   net = DynamicAE(config)
   net(torch.randn(1, *config["input_size"]))  # initialise all layers
@@ -39,6 +38,11 @@ def train(config: DAEConfig) -> None:
   )
   criterion = MSELoss()
 
+  saver = (
+    Save(config["saver"], net, criterion, optimizer)
+    if config["saver"] is not None
+    else None
+  )
   train, evaluation, _ = get_dataloaders(config)
 
   # print general logs
@@ -77,7 +81,7 @@ def train(config: DAEConfig) -> None:
     logger.info("eval loss: %s", eval_loss)
 
     # saving
-    if saver.user_saving and saver.save_time(epoch=i):
+    if saver is not None and saver.save_time(epoch=i):
       improved = loss_improved(
         best_eval_loss,
         eval_loss,
@@ -87,16 +91,7 @@ def train(config: DAEConfig) -> None:
         best_eval_loss = eval_loss
 
       if saver.at == "all" or improved:
-        if saver.mode == "inference":
-          saver.save_inference(net, i, eval_loss)
-        else:  # is not none within .user_saving
-          saver.save_checkpoint(
-            net,
-            epoch=i,
-            loss=criterion,
-            loss_value=train_loss,
-            optimizer=optimizer,
-          )
+        saver.save_model(i, eval_loss)
 
 
 def logs(
@@ -124,14 +119,7 @@ if __name__ == "__main__":
   # for python debugger
   from torch_practice.default_config import default_config
 
-  # saver default configuration.
-  basedir = "checkpoints"
-  save_every = 2
-  save_for = "inference"
-  save_at = "improve"
-  saver = Save(basedir, save_every, save_for, save_at)
-
-  config = default_config(saver)
+  config = default_config()
   config["layers"] = 3
   config["latent_dimension"] = 12
   train(config)

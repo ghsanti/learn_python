@@ -2,16 +2,14 @@
 
 import torch
 
-from torch_practice.saving import Save
-
 from .main_types import DAEConfig
 
 
-def default_config(saver: Save) -> DAEConfig:
+def default_config() -> DAEConfig:
   """Full default configuration.
 
   Args:
-  saver: an instance that configures how and when to save a model.
+  saver: Instance that configures saving, or None for not saving.
 
   """
   return {
@@ -27,8 +25,12 @@ def default_config(saver: Save) -> DAEConfig:
     "batch_size": 12,
     "lr": 0.001,
     "epochs": 10,
-    # save handler instance.
-    "saver": saver,
+    "saver": {  # replace dict with None for no saving!
+      "basedir": "checkpoints",
+      "save_every": 3,
+      "save_mode": "state_dict",
+      "save_at": "improve",
+    },
     # architecture
     "growth": 2,
     "init_out_channels": 6,

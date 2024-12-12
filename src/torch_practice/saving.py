@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 import torch
 
@@ -12,42 +12,63 @@ from torch_practice.utils.date_format import assert_date_format, make_timestamp
 logger = logging.getLogger(__package__)
 
 
-SaveAtType = Literal["all", "improve"] | None
-# in both cases, it's standard state dict saved, not torchscript
-# you can load and convert it if necessary.
-SaveModeType = Literal["inference", "training"] | None
+if TYPE_CHECKING:
+  SaveAtType = Literal["all", "improve"]
+  # in both cases, it's standard state dict saved, not torchscript
+  # you can load and convert it if necessary.
+  SaveModeType = Literal["state_dict", "full_model", "torchscript"]
+
+  class SaverBaseArgs(TypedDict):
+    basedir: str | Path
+    save_every: int
+    save_mode: SaveModeType
+    save_at: SaveAtType
+else:
+  SaveAtType = None
+  SaveModeType = None
+  SaverArgsType = None
 
 
 class Save:
   def __init__(
     self,
-    basedir: str | Path,
-    save_every: int = 3,
-    save_mode: SaveModeType = "inference",
-    save_at: SaveAtType = "improve",
+    base_config: SaverBaseArgs,
+    net: DynamicAE,
+    criterion: object,
+    optimizer: torch.optim.Optimizer,
   ) -> None:
     """Handle model and checkpoint saving.
 
       Upon instantiation, it creates the timestamped directory within basedir.
 
     Args:
-        basedir: path to base directory. Time-stamped subdir is created within.
-        save_every: saves every this number of epochs. Must be >0.
-        save_mode: save for "training" or "inference".
-        save_at: under which circumstances to save.
+        base_config:
+          basedir: path to base directory. Time-stamped subdir is created within.
+          save_every: saves every this number of epochs. Must be >0.
+          save_mode: save for "training" or "inference".
+          save_at: under which circumstances to save.
+        net: the instance of the architecture.
+        criterion: the instance of the criterion.
+        optimizer: the instance of the optimizer.
 
     """
-    if not isinstance(save_every, int) or save_every < 1:
-      msg = f"'save_every' must be a natural number. Found {type(save_every)}"
-      raise ValueError(msg)
-    if save_at not in ["all", "improve", None]:
-      msg = f"Options: 'all', 'improve' and None. Received {save_at}."
-      raise ValueError(msg)
-    self.mode = save_mode
-    self.every = save_every
-    self.at = save_at
-    self.dirname = self._make_savedir(basedir)
+    self.mode = base_config["save_mode"]
+    self.supported_modes: set[SaveModeType] = {
+      "state_dict",
+      "full_model",
+      "torchscript",
+    }
+    self.every = base_config["save_every"]
+    self.at = base_config["save_at"]
+    self.dirname = self._make_savedir(base_config["basedir"])
     self.user_saving = self.at is not None and self.mode is not None
+    self.net = net
+    self.criterion = criterion
+    self.optim = optimizer
+
+    if self.mode not in self.supported_modes:
+      msg = f"{self.mode} not in supported modes ({self.supported_modes})"
+      raise ValueError(msg)
 
   # basic utilities for homogeneity.
   def save_time(self, epoch: int) -> bool:
@@ -55,8 +76,8 @@ class Save:
     return ((epoch + 1) % self.every) == 0
 
   def make_filepath(self, epoch: int, loss: float) -> Path:
-    """Make filepath using epoch and loss value."""
-    return self.dirname / f"{epoch}_{loss:.3f}.pth"
+    """Make filepath using mode, epoch and loss."""
+    return self.dirname / f"{self.mode}_{epoch}_{loss:.3f}.pth"
 
   def _make_savedir(self, basedir: str | Path) -> Path:
     """Create timestamped directory within basedir.
@@ -70,38 +91,60 @@ class Save:
     savedir.mkdir(parents=True, exist_ok=False)
     return savedir
 
-  def save_inference(self, net: DynamicAE, epoch: int, loss: float) -> Path:
-    """Save state_dict of model-only.
-
-    This is useful to load for inference, not for retraining.
-    """
-    full_name = self.make_filepath(epoch, loss)
-    torch.save(net.state_dict(), str(full_name))
-    logger.info("Saved model state_dict to %s", str(full_name))
+  def save_model(self, epoch: int, loss_value: float) -> Path:
+    """Save model at automatically-made path, return saved path."""
+    full_name = self.make_filepath(epoch, loss_value)
+    match self.mode:
+      case "state_dict":
+        self.save_state_dict(full_name)
+      case "full_model":
+        self.save_full_model(full_name, epoch)
+      case "torchscript":  # torch script.
+        self.save_torchscript(full_name)
+      case _:
+        msg = "Tried to save an unsupported mode."
+        raise ValueError(msg)
+    logger.info("Saved %s to %s", self.mode, str(full_name))
     return full_name
 
-  def save_checkpoint(
+  def save_full_model(
     self,
-    net: DynamicAE,
+    full_name: Path,
     epoch: int,
-    loss: object,
-    loss_value: float,
-    optimizer: torch.optim.Optimizer,
   ) -> Path:
     """Save all states.
 
     Note that here the loss is the loss class.
 
     """
-    full_name = self.make_filepath(epoch, loss_value)
     torch.save(
       {
-        "model_state_dict": net.state_dict(),
+        "model_state_dict": self.net.state_dict(),
         "epoch": epoch,
-        "loss": loss,
-        "optimizer_state_dict": optimizer.state_dict(),
+        "loss": self.criterion,
+        "optimizer_state_dict": self.optim.state_dict(),
       },
       full_name,
     )
-    logger.info("Saved checkpoint to %s", str(full_name))
+    return full_name
+
+  def save_torchscript(
+    self,
+    full_name: Path,
+  ) -> Path:
+    """Save all states.
+
+    Note that here the loss is the loss class.
+
+    """
+    scripted = torch.jit.script(self.net)
+    scripted.save(full_name)
+    return full_name
+
+  def save_state_dict(self, full_name: Path) -> Path:
+    """Save state_dict of model-only.
+
+    This is useful to load for inference, not for retraining.
+    """
+    torch.save(self.net.state_dict(), str(full_name))
     return full_name

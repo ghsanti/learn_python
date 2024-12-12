@@ -6,11 +6,11 @@ from typing import Literal, TypedDict
 
 import torch
 
+from torch_practice.saving import SaverBaseArgs
+
 if typing.TYPE_CHECKING:
   from torch.utils.data import DataLoader
   from torchvision.datasets import CIFAR10
-
-  from torch_practice.saving import Save
 
   CIFAR = DataLoader[CIFAR10]
   _LogLevel = Literal["DEBUG", "INFO", "WARN", "CRITICAL"]
@@ -41,7 +41,7 @@ class DAEConfig(TypedDict):
   # n_workers for dataloaders
   n_workers: int
   loss_mode: LossModeType  # min=minimisation, max=maximisation.
-  saver: Save  # condense saving operations in this Save instance.
+  saver: SaverBaseArgs | None  # None won't save anything.
 
   # Hyperparameters
   batch_size: int  # critical hyperparameter.

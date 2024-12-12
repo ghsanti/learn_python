@@ -52,6 +52,8 @@ config["n_workers"] = 3
 train(config)
 ```
 
+You can also use the utilities and configuration to set up your training.
+The saving/loading modules have helper functions for that.
 
 ## Configuration
 
@@ -81,7 +83,7 @@ source .venv/bin/activate
 uv sync --extra cpu # or cu124
 ```
 
-Checking out to a Codespace it installs everything. Activate the venv using:
+Checking out to a Codespace sets all up. Activate the venv using:
 
 ```bash
 source .venv/bin/activate
