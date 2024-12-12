@@ -3,19 +3,21 @@
 import logging
 import re
 from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import torch
 
-from torch_practice.main_types import LossModeType
-from torch_practice.nn_arch import DynamicAE
-from torch_practice.saving import SaveModeType
+from torch_practice.main_types import LossModeType, SaveModeType
 from torch_practice.utils.date_format import (
   DirnameParsingError,
   assert_date_format,
 )
 from torch_practice.utils.track_loss import loss_improved
 
+if TYPE_CHECKING:
+  from torch_practice.nn_arch import DynamicAE
+else:
+  DynamicAE = None
 logger = logging.getLogger(__package__)
 
 LOSS_PATTERN = r".*_(\d+\.\d+)\.pth?$"
@@ -29,11 +31,6 @@ def load_state_dict(net: DynamicAE, filepath: Path) -> NamedTuple:
 def load_full_model(filepath: Path, *, weights_only: bool) -> dict:
   """Load full model."""
   return torch.load(filepath, weights_only=weights_only)
-
-
-def load_torchscript(filepath: Path) -> dict:
-  """Load torchscript module."""
-  return torch.jit.load(filepath)
 
 
 class LossNotFoundError(Exception):

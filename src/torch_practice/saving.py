@@ -2,34 +2,19 @@
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, TypedDict
 
 import torch
 
+from torch_practice.main_types import SaveModeType, SaverBaseArgs
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.date_format import assert_date_format, make_timestamp
 
 logger = logging.getLogger(__package__)
 
 
-if TYPE_CHECKING:
-  SaveAtType = Literal["all", "improve"]
-  # in both cases, it's standard state dict saved, not torchscript
-  # you can load and convert it if necessary.
-  SaveModeType = Literal["state_dict", "full_model", "torchscript"]
-
-  class SaverBaseArgs(TypedDict):
-    basedir: str | Path
-    save_every: int
-    save_mode: SaveModeType
-    save_at: SaveAtType
-else:
-  SaveAtType = None
-  SaveModeType = None
-  SaverArgsType = None
-
-
 class Save:
+  base_config: SaverBaseArgs
+
   def __init__(
     self,
     base_config: SaverBaseArgs,
@@ -56,7 +41,6 @@ class Save:
     self.supported_modes: set[SaveModeType] = {
       "state_dict",
       "full_model",
-      "torchscript",
     }
     self.every = base_config["save_every"]
     self.at = base_config["save_at"]
@@ -99,8 +83,6 @@ class Save:
         self.save_state_dict(full_name)
       case "full_model":
         self.save_full_model(full_name, epoch)
-      case "torchscript":  # torch script.
-        self.save_torchscript(full_name)
       case _:
         msg = "Tried to save an unsupported mode."
         raise ValueError(msg)
@@ -126,19 +108,6 @@ class Save:
       },
       full_name,
     )
-    return full_name
-
-  def save_torchscript(
-    self,
-    full_name: Path,
-  ) -> Path:
-    """Save all states.
-
-    Note that here the loss is the loss class.
-
-    """
-    scripted = torch.jit.script(self.net)
-    scripted.save(full_name)
     return full_name
 
   def save_state_dict(self, full_name: Path) -> Path:

@@ -1,24 +1,27 @@
 """Config object definition."""
 
-import typing
 from collections.abc import Callable
+from pathlib import Path
 from typing import Literal, TypedDict
 
 import torch
+from torch.utils.data import DataLoader
+from torchvision.datasets import CIFAR10
 
-from torch_practice.saving import SaverBaseArgs
+SaveAtType = Literal["all", "improve"]
+# torchscript unsupported bc they do not allow basic typing.
+SaveModeType = Literal["state_dict", "full_model"]
 
-if typing.TYPE_CHECKING:
-  from torch.utils.data import DataLoader
-  from torchvision.datasets import CIFAR10
 
-  CIFAR = DataLoader[CIFAR10]
-  _LogLevel = Literal["DEBUG", "INFO", "WARN", "CRITICAL"]
-else:
-  CIFAR = None
-  _LogLevel = None
-  Save = None
+class SaverBaseArgs(TypedDict):
+  basedir: str | Path
+  save_every: int
+  save_mode: SaveModeType
+  save_at: SaveAtType
 
+
+CIFAR = DataLoader[CIFAR10]
+_LogLevel = Literal["DEBUG", "INFO", "WARN", "CRITICAL"]
 LossModeType = Literal[
   "min",
   "max",
@@ -41,7 +44,7 @@ class DAEConfig(TypedDict):
   # n_workers for dataloaders
   n_workers: int
   loss_mode: LossModeType  # min=minimisation, max=maximisation.
-  saver: SaverBaseArgs | None  # None won't save anything.
+  saver: SaverBaseArgs  # None won't save anything.
 
   # Hyperparameters
   batch_size: int  # critical hyperparameter.
