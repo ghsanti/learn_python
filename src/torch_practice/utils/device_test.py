@@ -1,6 +1,6 @@
 import torch
 
-from torch_practice.utils.get_device import get_device
+from torch_practice.utils.device import get_device_name as get_device
 
 
 def mock_available() -> bool:

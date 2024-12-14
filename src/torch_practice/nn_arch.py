@@ -1,7 +1,7 @@
 """Definition of the autoencoder."""
 
 import torch
-from torch import Tensor, nn
+from torch import Tensor, batch_norm, nn
 
 # abs imports if can be __main__ (script)
 from torch_practice.main_types import DAEConfig
@@ -136,7 +136,7 @@ class DynamicDecoder(nn.Module):
         stride=config["p_stride"],
       )
       if self.config["use_pool"]
-      else None
+      else nn.Identity()
     )
 
     self.dropout2d = (
@@ -178,17 +178,18 @@ class DynamicDecoder(nn.Module):
     dense_activation = self.config["dense_activ"]
     conv_activation = self.config["c_activ"]
     c, p = -1, -1  # convolution, pool layers tracking.
+
     for i in range(len(shapes) - 1, -1, -1):
       name, shape = shapes[i]
       if name == "conv":
         conv, batch = self.tconvs[c], self.batch_norms[c]
-        x = batch(conv(x, output_size=shape))
-        if i == 0:  # last layer
+        x = conv(x, output_size=shape)
+        if i == 0:  # last layer, no batch norm
           return x
-        x = self.dropout2d(conv_activation(x))
+        x = self.dropout2d(conv_activation(batch(x)))
         c -= 1
-      elif self.unpool is not None and name == "pool":
-        x = self.unpool(  # type: ignore pyright bug
+      elif name == "pool":
+        x = self.unpool(
           x,
           pool_indices[p],
           output_size=shape,
@@ -201,7 +202,7 @@ class DynamicDecoder(nn.Module):
           self.dense = nn.Linear(
             self.config["latent_dimension"],
             shape[-1],
-          ).to(x.device)  # put the layer wherever the tensor is.
+          )
         x = self.dropout(dense_activation(self.dense(x)))
 
     return x
@@ -231,13 +232,14 @@ class DynamicAE(nn.Module):
       self.channels.append(o_channel)
       o_channel = int(round(o_channel * self.config["growth"]))
 
+    # use `r = self.encoder(x)`, then `decode(r)`. Where `r[0] = x`
     self.encoder = DynamicEncoder(
-      self.channels[1:],  # first is the image size.
+      self.channels[1:],  # discard input
       self.config,
     )
-    # discarded channel is the input "image" for the decoder.
+    # ditto: discarded the input
     self.decoder = DynamicDecoder(self.channels[:-1], self.config)
-    # channels are reversed but reversed makes it easier for decoding.
+    # reversed channels makes it easier for decoding.
 
   def forward(self, x: Tensor) -> Tensor:
     """Forward Pass for AE."""

@@ -6,12 +6,7 @@ from torch_practice.main_types import RunConfig
 
 
 def default_config() -> RunConfig:
-  """Full default configuration.
-
-  Args:
-  saver: Instance that configures saving, or None for not saving.
-
-  """
+  """Create a default configuration."""
   return {
     # general runtime
     "seed": None,

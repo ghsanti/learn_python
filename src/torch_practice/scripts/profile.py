@@ -1,10 +1,10 @@
 """Simple profiling run with default configuration."""
 
-import logging
-
-lgr = logging.getLogger()
-logging.basicConfig(level="DEBUG")  # default is warn
 if __name__ == "__main__":
+  import logging
+
+  lgr = logging.getLogger()
+  logging.basicConfig(level="DEBUG")  # default is warn
   import torch
   from torch.profiler import ProfilerActivity, profile, record_function
   from torchinfo import summary
@@ -14,8 +14,8 @@ if __name__ == "__main__":
   from torch_practice.nn_arch import DynamicAE
 
   config = default_config()  # you can tweak "config"
-  model = DynamicAE(config)
-  summary(model, input_size=(1, *config.get("input_size")), device="cpu")
+  model = DynamicAE(config["arch"])
+  summary(model, input_size=(1, *config["arch"]["input_size"]), device="cpu")
 
   # simple profiling info
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     lgr.critical("MPS profiling is not available.")
     sys.exit(0)
   else:
-    img = torch.randn(config.get("batch_size"), *config.get("input_size")).to(
+    img = torch.randn(config["batch_size"], *config["arch"]["input_size"]).to(
       device,
     )
     model = model.to(device)
@@ -54,9 +54,3 @@ if __name__ == "__main__":
       # with
       model(img)
     lgr.info(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
-
-else:
-  msg = "This script is intended to be run with `python -m`, not imported."
-  raise RuntimeError(
-    msg,
-  )

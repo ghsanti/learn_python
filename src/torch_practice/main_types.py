@@ -14,6 +14,7 @@ CIFAR = DataLoader[CIFAR10]
 SaveAtType = Literal["all", "improve"]
 # torchscript unsupported bc they do not allow basic typing.
 SaveModeType = Literal["state_dict", "full_model"]
+Extensions = Literal[".pth", ".pt", ".tar"]
 
 
 class SaverBaseArgs(TypedDict):

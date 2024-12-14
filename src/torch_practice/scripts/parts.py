@@ -10,7 +10,7 @@ if __name__ == "__main__":
   from torch_practice.default_config import default_config
   from torch_practice.nn_arch import DynamicAE
 
-  net = DynamicAE(default_config())
+  net = DynamicAE(default_config()["arch"])
   optim = torch.optim.SGD(params=net.parameters())
 
   logger.debug(optim.state_dict)

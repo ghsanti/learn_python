@@ -5,7 +5,7 @@ from pathlib import Path
 
 import torch
 
-from torch_practice.main_types import SaveModeType, SaverBaseArgs
+from torch_practice.main_types import Extensions, SaveModeType, SaverBaseArgs
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.date_format import assert_date_format, make_timestamp
 
@@ -38,10 +38,11 @@ class Save:
 
     """
     self.mode = base_config["save_mode"]
-    self.supported_modes: set[SaveModeType] = {
+    self._supported_modes: set[SaveModeType] = {
       "state_dict",
       "full_model",
     }
+    self._ext: Extensions = ".pth" if self.mode == "state_dict" else ".tar"
     self.every = base_config["save_every"]
     self.at = base_config["save_at"]
     self.dirname = self._make_savedir(base_config["basedir"])
@@ -50,8 +51,8 @@ class Save:
     self.criterion = criterion
     self.optim = optimizer
 
-    if self.mode not in self.supported_modes:
-      msg = f"{self.mode} not in supported modes ({self.supported_modes})"
+    if self.mode not in self._supported_modes:
+      msg = f"{self.mode} not in supported modes ({self._supported_modes})"
       raise ValueError(msg)
 
   # basic utilities for homogeneity.
@@ -61,7 +62,7 @@ class Save:
 
   def make_filepath(self, epoch: int, loss: float) -> Path:
     """Make filepath using mode, epoch and loss."""
-    return self.dirname / f"{self.mode}_{epoch}_{loss:.3f}.pth"
+    return self.dirname / f"{self.mode}_{epoch}_{loss:.3f}{self._ext}"
 
   def _make_savedir(self, basedir: str | Path) -> Path:
     """Create timestamped directory within basedir.

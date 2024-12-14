@@ -11,7 +11,7 @@ from torch_practice.dataloading import get_dataloaders
 from torch_practice.main_types import RunConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.saving import Save
-from torch_practice.utils.get_device import get_device
+from torch_practice.utils.device import get_device_name
 from torch_practice.utils.track_loss import loss_improved
 
 logger = logging.getLogger(__package__)
@@ -26,11 +26,11 @@ def train(config: RunConfig) -> None:
   if config["seed"] is not None:
     torch.manual_seed(config["seed"])
 
-  device = get_device()
+  device = torch.device(get_device_name())
   net = DynamicAE(config["arch"])
   net(torch.randn(1, *config["arch"]["input_size"]))  # initialise all layers
 
-  net = net.to(device)  # done after initialising may prevent issues.
+  net = net.to(device)  # after initialising and before `net.parameters()`
   optimizer = SGD(
     params=net.parameters(),  # weights and biases
     lr=config["lr"],
@@ -46,7 +46,7 @@ def train(config: RunConfig) -> None:
   train, evaluation, _ = get_dataloaders(config)
 
   # print general logs
-  logs(config, optimizer, criterion, device)
+  logs(config, optimizer, criterion, device.type)
 
   best_eval_loss = None
   epochs = config["epochs"]
@@ -59,7 +59,7 @@ def train(config: RunConfig) -> None:
       imgs = images.to(device)
       optimizer.zero_grad()
       loss = criterion(net(imgs), imgs)
-      loss.backward()
+      loss.backward()  # updates occur per batch.
       optimizer.step()
       train_loss += loss.item()
 
@@ -76,9 +76,7 @@ def train(config: RunConfig) -> None:
       log_gradients(net)
 
     # print epoch logs
-    msg = f"Epoch {i+1} of {epochs}, Train Loss: {train_loss:.3f}"
-    logger.info(msg)
-    logger.info("eval loss: %s", eval_loss)
+    epoch_logs(i, epochs, train_loss, eval_loss)
 
     # saving
     if saver is not None and saver.save_time(epoch=i):
@@ -91,7 +89,7 @@ def train(config: RunConfig) -> None:
         best_eval_loss = eval_loss
 
       if saver.at == "all" or improved:
-        saver.save_model(i, eval_loss)
+        saver.save_model(i + 1, eval_loss)
 
 
 def logs(
@@ -115,11 +113,26 @@ def log_gradients(net: DynamicAE) -> None:
       logging.debug("Gradient for %s: %s", name, param.grad.abs().max())
 
 
+def epoch_logs(
+  index: int,
+  epochs: int,
+  train_loss: float,
+  eval_loss: float,
+) -> None:
+  """At-epoch-end logger."""
+  msg1 = f"Epoch {index+1} / {epochs}"
+  msg2 = f"loss train: {train_loss:.3f}"
+  msg3 = f"eval: {eval_loss:.3f}"
+  msg = f"{msg1}  |  {msg2}  |  {msg3}"
+  logger.info(msg)
+
+
 if __name__ == "__main__":
   # for python debugger
   from torch_practice.default_config import default_config
 
   config = default_config()
-  config["arch"]["layers"] = 3
-  config["arch"]["latent_dimension"] = 12
+  arch = config["arch"]
+  arch["layers"] = 1
+  arch["latent_dimension"] = 12
   train(config)

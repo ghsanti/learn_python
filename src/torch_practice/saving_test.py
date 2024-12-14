@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import torch
 
@@ -13,15 +12,7 @@ from torch_practice.loading import (
 )
 from torch_practice.main_types import RunConfig
 from torch_practice.nn_arch import DynamicAE
-from torch_practice.saving import Save
-
-if TYPE_CHECKING:
-  from torch_practice.main_types import DAEConfig
-  from torch_practice.saving import SaveModeType, SaverBaseArgs
-else:
-  SaverBaseArgs = None
-  SaveModeType = None
-  DAEConfig = None
+from torch_practice.saving import Save, SaveModeType, SaverBaseArgs
 
 logger = logging.getLogger(__package__)
 

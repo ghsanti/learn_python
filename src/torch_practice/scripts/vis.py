@@ -26,7 +26,7 @@ if __name__ == "__main__":
   img_grid = img_grid / 2 + 0.5  # un normalize
   writer.add_image("images", img_grid)
 
-  net = DynamicAE(config)
+  net = DynamicAE(config["arch"])
   net(images)  # needs forward pass
   writer.add_graph(net, images)  # this is very cool..
   writer.close()
