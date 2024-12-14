@@ -9,9 +9,11 @@ Simple PyTorch AutoEncoder to play with.
 
 ## Set Up
 
-Important note. Repo can be created from devcontainer (codespace or vscode devcontainers), but not on Mac M1s and such. That is because it'd be creating Linux/aarm64 and no PyTorch wheel is available.
+Important note. Repo can be created from devcontainer (codespace or vscode devcontainers). 
 
-You can also spin up a Python 3.10 Docker Image and use it (for Mac Silicon this may cause installation issues though.)
+It wont work on a Linux container on Mac-M1 (arm64). It'll ask for Linux-aarm64 and no PyTorch wheel is available.
+
+It's recommended though to use Python 3.10 Docker Image and run the commands below.
 
 ### Google Colab
 
@@ -30,7 +32,7 @@ source .venv/bin/activate
 uv add torch_practice[cpu]@git+https://github.com/ghsanti/torch_practice@dev
 ```
 
-Or from pip:
+Or from pip (but it needs Python 3.10 currently.):
 
 ```bash
 python3 -m pip install torch_practice[cpu]@git+https://github.com/ghsanti/torch_practice@dev
@@ -38,7 +40,7 @@ python3 -m pip install torch_practice[cpu]@git+https://github.com/ghsanti/torch_
 
 For GPUs, use the extra `[cu124]` instead of `[cpu]`.
 
-For other systems, `cpu` will works (including Apple Silicon like M1s)
+For other systems, `cpu` will work (incl. Apple Silicon like M1s)
 
 
 
