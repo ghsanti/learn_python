@@ -6,6 +6,7 @@ import pprint
 import torch
 from torch.nn import MSELoss
 from torch.optim import SGD
+from tqdm import tqdm
 
 from torch_practice.dataloading import get_dataloaders
 from torch_practice.main_types import RunConfig
@@ -55,7 +56,7 @@ def train(config: RunConfig) -> None:
     train_loss, eval_loss = 0.0, 0.0
 
     net.train()
-    for images, _ in train:
+    for images, _ in tqdm(train):
       imgs = images.to(device)
       optimizer.zero_grad()
       loss = criterion(net(imgs), imgs)
@@ -64,7 +65,7 @@ def train(config: RunConfig) -> None:
       train_loss += loss.item()
 
     net.eval()
-    for images_ev, _ in evaluation:
+    for images_ev, _ in tqdm(evaluation):
       imgs_ev = images_ev.to(device)
       with torch.no_grad():
         eval_loss += criterion(net(imgs_ev), imgs_ev).item()

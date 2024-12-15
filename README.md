@@ -9,17 +9,40 @@ Simple PyTorch AutoEncoder to play with.
 
 ## Set Up
 
-Important note. Repo can be created from devcontainer (codespace or vscode devcontainers). 
+For Colab use:
 
-It wont work on a Linux container on Mac-M1 (arm64). It'll ask for Linux-aarm64 and no PyTorch wheel is available.
+```bash
+!pip3 install torch_practice[cu124]@git+https://github.com/ghsanti/torch_practice
+```
+That's for CUDA. For CPU replace `[cu124]` for `[cpu]`. That's all you need.
 
-It's recommended though to use Python 3.10 Docker Image and run the commands below.
+You can check out simple examples in the [Notebooks](./notebooks/).
 
-### Google Colab
+----------
 
-Check out simple examples in the [Notebooks](./notebooks/).
+<details>
+<summary>
+Important remarks for devcontainers.
+</summary>
 
-### Elsewhere
+Repo can be used from devcontainers which is highly recommended. This package does not
+remove files, but it does write out:
+* timestamped folders for checkpoints (optionally). 
+* and a datafolder for the dataset downloaded directly through PyTorch (no custom code.)
+
+The default locations are all within the configuration file linked further down.
+
+The container should set up any CPU system just fine.
+
+* It won't install any GPU libraries, nor will allow use of MPS which is a MacOS feature,
+and you'll be running Linux (Debian with Python 3.10)
+* It should be possible to just install the GPU version from within, but this is
+untested.
+* To run the notebooks in VSCode, you may need `uv sync --extra cpu --extra ipynb`
+* Or from pip `pip install "ipykernel>6.29"`
+</details>
+
+### Non-Colab install
 
 For new project:
 

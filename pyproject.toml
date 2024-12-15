@@ -27,6 +27,7 @@ dependencies = [
     "ray[train,tune]>=2.39.0",
     "tensorboard>=2.18.0",
     "torchinfo>=1.8.0",
+    "tqdm>=4.67.1",
 ]
 
 [project.optional-dependencies]
@@ -65,11 +66,11 @@ conflicts = [[{ extra = "cpu" }, { extra = "cu124" }]]
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin'" },
+    { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin' and platform_machine != 'aarch64'" },
     { index = "pytorch-cu124", extra = "cu124", marker = "platform_system != 'Darwin'" },
 ]
-torchvision = [
-    { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin'" },
+torchvision = [ # this is for linux arm; if you have mac silicon on linux docker, it should get it.
+    { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin' and platform_machine != 'aarch64'" },
     { index = "pytorch-cu124", extra = "cu124", marker = "platform_system != 'Darwin'" },
 ]
 

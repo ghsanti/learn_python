@@ -1,7 +1,7 @@
 """Definition of the autoencoder."""
 
 import torch
-from torch import Tensor, batch_norm, nn
+from torch import Tensor, nn
 
 # abs imports if can be __main__ (script)
 from torch_practice.main_types import DAEConfig
@@ -33,6 +33,8 @@ def create_layers(
       ),
     )
     batch.append(nn.LazyBatchNorm2d())
+  if is_transpose:# Keep same length but make out layer have no BN.
+    batch[0] = nn.Identity()
   return convs, batch
 
 

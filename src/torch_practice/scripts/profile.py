@@ -6,7 +6,6 @@ if __name__ == "__main__":
   lgr = logging.getLogger()
   logging.basicConfig(level="DEBUG")  # default is warn
   import torch
-  from torch.profiler import ProfilerActivity, profile, record_function
   from torchinfo import summary
 
   # abs imports if can be __main__ (script)
@@ -14,43 +13,46 @@ if __name__ == "__main__":
   from torch_practice.nn_arch import DynamicAE
 
   config = default_config()  # you can tweak "config"
+  config["batch_size"] = 500
+  i_size = config["arch"]["input_size"]
   model = DynamicAE(config["arch"])
-  summary(model, input_size=(1, *config["arch"]["input_size"]), device="cpu")
 
   # simple profiling info
 
-  device = "cpu"
-  if torch.cuda.is_available():
-    device = "cuda"
-  elif torch.xpu.is_available():
-    device = "xpu"
-  elif torch.mps.is_available():
-    device = "mps"
+  device = "mps"  # get_device_name()
+
+  # NOTE: we test inference in training mode, so we need batch > 1
+  model(torch.randn((1, *i_size)))  # initialize
+
+  summary(model, input_size=(1, *config["arch"]["input_size"]))
 
   lgr.debug("Device %s", device)
+  model.to(device)
+  img = torch.randn(config["batch_size"], *config["arch"]["input_size"]).to(
+    device,
+  )
   if device == "mps":
-    import sys
+    from torch.mps import profiler
 
-    lgr.critical("MPS profiling is not available.")
-    sys.exit(0)
+    with profiler.profile(mode="interval", wait_until_completed=False):
+      model(img)
+
   else:
-    img = torch.randn(config["batch_size"], *config["arch"]["input_size"]).to(
-      device,
-    )
+    from torch.profiler import ProfilerActivity, profile, record_function
+
     model = model.to(device)
+    acts = [ProfilerActivity.CPU]
+
+    if device == "cuda":
+      acts.append(ProfilerActivity.CUDA)
+
     with (
       profile(
-        activities=[
-          ProfilerActivity.CPU,
-          # ProfilerActivity.XPU,
-          # ProfilerActivity.CUDA,
-          # ProfilerActivity.MPS # may be available in the future.
-        ],
+        activities=acts,
         record_shapes=True,
         profile_memory=True,
       ) as prof,
       record_function("model_inference"),
     ):
-      # with
       model(img)
     lgr.info(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
