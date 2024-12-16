@@ -18,6 +18,8 @@ def default_config() -> RunConfig:
     "loss_mode": "min",
     # HyperParameters (also the architecture to an extent.)
     "batch_size": 12,
+    "autocast_dtype": torch.bfloat16,
+    "print_network_graph": True,
     "lr": 0.001,
     "epochs": 10,
     "saver": {  # replace dict with None for no saving!

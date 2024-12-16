@@ -45,7 +45,6 @@ if __name__ == "__main__":
 
     if device == "cuda":
       acts.append(ProfilerActivity.CUDA)
-
     with (
       profile(
         activities=acts,

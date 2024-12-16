@@ -23,11 +23,11 @@ classifiers = [
 
 
 dependencies = [
-    "matplotlib>=3.9.2",
+    "matplotlib>=3.9.0",
     "ray[train,tune]>=2.39.0",
     "tensorboard>=2.18.0",
     "torchinfo>=1.8.0",
-    "tqdm>=4.67.1",
+    "tqdm>=4.66.5",
 ]
 
 [project.optional-dependencies]
@@ -55,6 +55,7 @@ exclude = ["*_test.py"]
 [dependency-groups]
 dev = [ # advantage: 'dev' is synced by default. `uv add --dev pkgname`
     "coverage>=7.6.9",
+    "pip>=24.3.1",
     "pre-commit>=4.0.1",
     "pyright>=1.1.390",
     "pytest>=8.3.4",
@@ -67,12 +68,13 @@ conflicts = [[{ extra = "cpu" }, { extra = "cu124" }]]
 [tool.uv.sources]
 torch = [
     { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin' and platform_machine != 'aarch64'" },
-    { index = "pytorch-cu124", extra = "cu124", marker = "platform_system != 'Darwin'" },
+    { index = "pytorch-cu124", extra = "cu124", marker = "platform_system != 'Darwin' and platform_machine != 'aarch64'" },
 ]
 torchvision = [ # this is for linux arm; if you have mac silicon on linux docker, it should get it.
     { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin' and platform_machine != 'aarch64'" },
-    { index = "pytorch-cu124", extra = "cu124", marker = "platform_system != 'Darwin'" },
+    { index = "pytorch-cu124", extra = "cu124", marker = "platform_system != 'Darwin'  and platform_machine != 'aarch64' " },
 ]
+
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

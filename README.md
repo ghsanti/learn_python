@@ -65,6 +65,17 @@ For GPUs, use the extra `[cu124]` instead of `[cpu]`.
 
 For other systems, `cpu` will work (incl. Apple Silicon like M1s)
 
+If you want a pre release of pytorch, you can try removing `[cpu]`
+
+And using something like (from within the virtual environment):
+
+
+```bash
+ python -m ensurepip
+ python -m pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cpu
+ ```
+
+ Which is taken from [the nightly tab of torch start locally.](https://pytorch.org/get-started/locally/)
 
 
 One then can run it:

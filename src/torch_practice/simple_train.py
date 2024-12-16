@@ -31,6 +31,12 @@ def train(config: RunConfig) -> None:
   net = DynamicAE(config["arch"])
   net(torch.randn(1, *config["arch"]["input_size"]))  # initialise all layers
 
+  # optional network summary.
+  if config["print_network_graph"] is True:
+    from torchinfo import summary
+
+    summary(net, (1, *config["arch"]["input_size"]))
+
   net = net.to(device)  # after initialising and before `net.parameters()`
   optimizer = SGD(
     params=net.parameters(),  # weights and biases
@@ -38,7 +44,6 @@ def train(config: RunConfig) -> None:
     weight_decay=1e-4,
   )
   criterion = MSELoss()
-
   saver = (
     Save(config["saver"], net, criterion, optimizer)
     if config["saver"] is not None
@@ -59,7 +64,13 @@ def train(config: RunConfig) -> None:
     for images, _ in tqdm(train):
       imgs = images.to(device)
       optimizer.zero_grad()
-      loss = criterion(net(imgs), imgs)
+      with torch.autocast(
+        device_type=device.type,
+        dtype=config["autocast_dtype"],
+        enabled=config["autocast_dtype"] is not None,
+      ):
+        loss = criterion(net(imgs), imgs)
+
       loss.backward()  # updates occur per batch.
       optimizer.step()
       train_loss += loss.item()
@@ -67,7 +78,14 @@ def train(config: RunConfig) -> None:
     net.eval()
     for images_ev, _ in tqdm(evaluation):
       imgs_ev = images_ev.to(device)
-      with torch.no_grad():
+      with (
+        torch.no_grad(),
+        torch.autocast(
+          device_type=device.type,
+          dtype=config["autocast_dtype"],
+          enabled=config["autocast_dtype"] is not None,
+        ),
+      ):
         eval_loss += criterion(net(imgs_ev), imgs_ev).item()
 
     train_loss = train_loss / len(train)
@@ -100,6 +118,7 @@ def logs(
   device: str,
 ) -> None:
   """Print general logs at the start of optimisation."""
+  logger.info("Torch Version: %s", torch.__version__)
   logger.info("Network Configuration: ")
   logger.info(pprint.pformat(config))
   logger.debug("Network Device %s", device)
@@ -132,8 +151,14 @@ if __name__ == "__main__":
   # for python debugger
   from torch_practice.default_config import default_config
 
-  config = default_config()
-  arch = config["arch"]
-  arch["layers"] = 1
-  arch["latent_dimension"] = 12
-  train(config)
+  c = default_config()
+  c["epochs"] = 400
+  c["batch_size"] = 12
+  c["autocast_dtype"] = None  # torch.bfloat16
+  c["saver"]["save_every"] = 10
+  c["arch"]["c_activ"] = torch.nn.functional.relu
+  c["arch"]["dense_activ"] = torch.nn.functional.silu
+  c["arch"]["growth"] = 1.7
+  c["arch"]["layers"] = 3
+  c["arch"]["c_stride"] = 1
+  train(c)

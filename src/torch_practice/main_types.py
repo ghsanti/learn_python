@@ -82,7 +82,9 @@ class RunConfig(TypedDict):
   # n_workers for dataloaders
   n_workers: int
   loss_mode: LossModeType  # min=minimisation, max=maximisation.
-
+  # note, only `torch.float16` or `torch.bfloat16` make sense, otherwise use `None`
+  autocast_dtype: torch.dtype | None  # possible datatypes for autocast
+  print_network_graph: bool  # if true prints a torchinfo summary.
   # Hyperparameters
   batch_size: int  # critical hyperparameter.
   epochs: int
