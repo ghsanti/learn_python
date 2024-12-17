@@ -102,8 +102,8 @@ def get_best_path(
   best_name, best_loss = None, None
 
   for file in start_from.iterdir():
-    logger.debug("Inspecting filepath: %s", file)
     if file.is_file():
+      logger.debug("Inspecting filepath: %s", file)
       result = extract_improvement(file, save_mode, loss_mode, best_loss)
       if result is not None:  # no improvement or invalid file format.
         best_name, best_loss = result
@@ -112,8 +112,8 @@ def get_best_path(
       try:  # only parse timestamped directories.
         assert_date_format(file)
         if depth > 0:
-          depth -= 1
-          result = get_best_path(file, loss_mode, depth, save_mode)
+          result = get_best_path(file, loss_mode, depth - 1, save_mode)
+
           if result is not None and loss_improved(
             best=best_loss,
             new=result[1],

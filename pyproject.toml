@@ -32,6 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 cpu = ["torch>=2.5.1", "torchvision>=0.20.1"]
+cu121 = ["torch>=2.5.1", "torchvision>=0.20.1"]
 cu124 = ["torch>=2.5.1", "torchvision>=0.20.1"]
 ipynb = ["ipykernel>6.29"]
 
@@ -63,7 +64,7 @@ dev = [ # advantage: 'dev' is synced by default. `uv add --dev pkgname`
 ]
 
 [tool.uv]
-conflicts = [[{ extra = "cpu" }, { extra = "cu124" }]]
+conflicts = [[{ extra = "cpu" }, { extra = "cu121" }, { extra = "cu124" }]]
 
 [tool.uv.sources]
 torch = [

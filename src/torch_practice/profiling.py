@@ -8,8 +8,6 @@ from torchinfo import summary
 
 from torch_practice.utils.device import get_device_name
 
-logging.basicConfig(level="DEBUG")  # default is warn
-
 logger = logging.getLogger(__package__)
 
 
@@ -82,6 +80,7 @@ if __name__ == "__main__":
   from torch_practice.default_config import default_config
   from torch_practice.nn_arch import DynamicAE
 
+  logging.basicConfig(level="DEBUG")  # default is warn
   c = default_config()
   c["epochs"] = 400
   c["batch_size"] = 12

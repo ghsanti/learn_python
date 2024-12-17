@@ -1,6 +1,6 @@
 """Show how the trained network reconstructs images."""
 
-if __name__ == "__main":
+if __name__ == "__main__":
   import logging
   from pathlib import Path
 
@@ -13,6 +13,7 @@ if __name__ == "__main":
   from torch_practice.loading import (
     get_best_path,
     load_full_model,
+    load_state_dict,
   )
   from torch_practice.nn_arch import DynamicAE
 
@@ -23,9 +24,9 @@ if __name__ == "__main":
   # must the right arch for the weights! *below is for sample weights.*
   c["arch"] = {
     # architecture
-    "growth": 2,
-    "init_out_channels": 8,
-    "layers": 4,
+    "growth": 1.7,
+    "init_out_channels": 6,
+    "layers": 3,
     "input_size": (3, 32, 32),
     # convolution
     "c_kernel": 2,
@@ -41,22 +42,25 @@ if __name__ == "__main":
     "dropout_rate_latent": 0.3,
     "use_dropout_latent": False,
     # dense
-    "latent_dimension": 72,
-    "dense_activ": torch.nn.functional.leaky_relu,
+    "latent_dimension": 96,
+    "dense_activ": torch.nn.functional.silu,
   }
 
   net = DynamicAE(c["arch"])
   net(torch.randn(1, *c["arch"]["input_size"]))
 
   start_from = Path(c["saver"]["basedir"])
-  save_mode = "full_model"  # or "state_dict"
+  save_mode = "state_dict"  # or "state_dict"
   depth = 1
   loss_mode = c["loss_mode"]
   best_path = get_best_path(start_from, loss_mode, depth, save_mode)
   if best_path is not None:
-    ckp = load_full_model(best_path[0], weights_only=False)
-    net.load_state_dict(ckp["model_state_dict"])
-    net.eval()
+    path, value = best_path
+    if save_mode == "state_dict":
+      load_state_dict(net, path)
+      net.eval()
+    else:
+      ckp = load_full_model(best_path[0], weights_only=False)
 
     writer = SummaryWriter("tboard_logs")
 
