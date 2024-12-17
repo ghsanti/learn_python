@@ -12,3 +12,5 @@ runs
 .vscode
 .pytest_cache
 .ruff_cache
+checkpoints
+tboard_logs

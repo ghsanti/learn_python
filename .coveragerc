@@ -1,0 +1,11 @@
+[run]
+source = src/torch_practice
+
+[paths]
+source = src/torch_practice
+
+[report]
+show_missing = on
+# files such as `__init__.py`
+skip_empty  = on
+skip_covered = off

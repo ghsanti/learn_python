@@ -28,11 +28,13 @@ def create_layers(
     convs.append(
       layer(
         out_channels=in_dim,
-        kernel_size=config.get("c_kernel"),
-        stride=config.get("c_stride"),
+        kernel_size=config["c_kernel"],
+        stride=config["c_stride"],
       ),
     )
     batch.append(nn.LazyBatchNorm2d())
+  if is_transpose:# Keep same length but make out layer have no BN.
+    batch[0] = nn.Identity()
   return convs, batch
 
 
@@ -51,24 +53,24 @@ class DynamicEncoder(nn.Module):
     """
     super().__init__()
     self.config = config
-    self.dense = nn.LazyLinear(config.get("latent_dimension"))
+    self.dense = nn.LazyLinear(config["latent_dimension"])
     self.pool = (
       nn.MaxPool2d(
-        kernel_size=config.get("p_kernel"),
-        stride=config.get("p_stride"),
+        kernel_size=config["p_kernel"],
+        stride=config["p_stride"],
         return_indices=True,
       )
-      if self.config.get("use_pool")
+      if self.config["use_pool"]
       else None
     )
     self.dropout2d = (
-      nn.Dropout2d(self.config.get("dropout2d_rate"))
-      if self.config.get("use_dropout")
+      nn.Dropout2d(self.config["dropout2d_rate"])
+      if self.config["use_dropout2d"]
       else nn.Identity()
     )
     self.dropout = (
-      nn.Dropout(self.config.get("dropout_rate_latent"))
-      if self.config.get("use_dropout_latent")
+      nn.Dropout(self.config["dropout_rate_latent"])
+      if self.config["use_dropout_latent"]
       else nn.Identity()
     )
     self.convs, self.batch_norms = create_layers(
@@ -89,8 +91,8 @@ class DynamicEncoder(nn.Module):
         shapes: before each pooling, and before flattening.
 
     """
-    dense_activation = self.config.get("dense_activ")
-    conv_activation = self.config.get("c_activ")
+    dense_activation = self.config["dense_activ"]
+    conv_activation = self.config["c_activ"]
 
     decoding_shapes, pool_indices = [], []
 
@@ -132,21 +134,21 @@ class DynamicDecoder(nn.Module):
 
     self.unpool = (
       nn.MaxUnpool2d(
-        kernel_size=config.get("p_kernel"),
-        stride=config.get("p_stride"),
+        kernel_size=config["p_kernel"],
+        stride=config["p_stride"],
       )
-      if self.config.get("use_pool")
-      else None
+      if self.config["use_pool"]
+      else nn.Identity()
     )
 
     self.dropout2d = (
-      nn.Dropout2d(self.config.get("dropout2d_rate"))
-      if self.config.get("use_dropout")
+      nn.Dropout2d(self.config["dropout2d_rate"])
+      if self.config["use_dropout2d"]
       else nn.Identity()
     )
     self.dropout = (
-      nn.Dropout(self.config.get("dropout_rate_latent"))
-      if self.config.get("use_dropout_latent")
+      nn.Dropout(self.config["dropout_rate_latent"])
+      if self.config["use_dropout_latent"]
       else nn.Identity()
     )
 
@@ -175,20 +177,21 @@ class DynamicDecoder(nn.Module):
         shapes: output size for each layer.
 
     """
-    dense_activation = self.config.get("dense_activ")
-    conv_activation = self.config.get("c_activ")
+    dense_activation = self.config["dense_activ"]
+    conv_activation = self.config["c_activ"]
     c, p = -1, -1  # convolution, pool layers tracking.
+
     for i in range(len(shapes) - 1, -1, -1):
       name, shape = shapes[i]
       if name == "conv":
         conv, batch = self.tconvs[c], self.batch_norms[c]
-        x = batch(conv(x, output_size=shape))
-        if i == 0:  # last layer
+        x = conv(x, output_size=shape)
+        if i == 0:  # last layer, no batch norm
           return x
-        x = self.dropout2d(conv_activation(x))
+        x = self.dropout2d(conv_activation(batch(x)))
         c -= 1
-      elif self.unpool is not None and name == "pool":
-        x = self.unpool(  # type: ignore pyright bug
+      elif name == "pool":
+        x = self.unpool(
           x,
           pool_indices[p],
           output_size=shape,
@@ -199,9 +202,9 @@ class DynamicDecoder(nn.Module):
       elif name == "dense":
         if self.dense is None:
           self.dense = nn.Linear(
-            self.config.get("latent_dimension"),
+            self.config["latent_dimension"],
             shape[-1],
-          ).to(x.device)  # put the layer wherever the tensor is.
+          )
         x = self.dropout(dense_activation(self.dense(x)))
 
     return x
@@ -221,21 +224,24 @@ class DynamicAE(nn.Module):
     super().__init__()
     self.config = config
     # proto list of "filters" for each network.
-    self.channels: list[int] = [self.config.get("input_size")[0]]
+    self.channels: list[int] = []
+    # append first channel, used by decoder.
+    self.channels.append(self.config["input_size"][0])
 
     # make the channels from user config.
-    o_channel = config.get("init_out_channels")
-    for _i in range(config.get("layers")):
+    o_channel = config["init_out_channels"]
+    for _i in range(config["layers"]):
       self.channels.append(o_channel)
-      o_channel = int(round(o_channel * self.config.get("growth")))
+      o_channel = int(round(o_channel * self.config["growth"]))
 
+    # use `r = self.encoder(x)`, then `decode(r)`. Where `r[0] = x`
     self.encoder = DynamicEncoder(
-      self.channels[1:],  # first is the image size.
+      self.channels[1:],  # discard input
       self.config,
     )
-    # discarded channel is the input "image" for the decoder.
+    # ditto: discarded the input
     self.decoder = DynamicDecoder(self.channels[:-1], self.config)
-    # channels are reversed but reversed makes it easier for decoding.
+    # reversed channels makes it easier for decoding.
 
   def forward(self, x: Tensor) -> Tensor:
     """Forward Pass for AE."""

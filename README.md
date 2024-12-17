@@ -9,20 +9,74 @@ Simple PyTorch AutoEncoder to play with.
 
 ## Set Up
 
-### Google Colab
-
-Check out simple examples in the [Notebooks](./notebooks/).
-
-### Elsewhere
-
-As an example:
+For Colab use:
 
 ```bash
-python -m venv
+!pip3 install torch_practice[cu124]@git+https://github.com/ghsanti/torch_practice
+```
+That's for CUDA. For CPU replace `[cu124]` for `[cpu]`. That's all you need.
+
+You can check out simple examples in the [Notebooks](./notebooks/).
+
+----------
+
+<details>
+<summary>
+Important remarks for devcontainers.
+</summary>
+
+Repo can be used from devcontainers which is highly recommended. This package does not
+remove files, but it does write out:
+* timestamped folders for checkpoints (optionally). 
+* and a datafolder for the dataset downloaded directly through PyTorch (no custom code.)
+
+The default locations are all within the configuration file linked further down.
+
+The container should set up any CPU system just fine.
+
+* It won't install any GPU libraries, nor will allow use of MPS which is a MacOS feature,
+and you'll be running Linux (Debian with Python 3.10)
+* It should be possible to just install the GPU version from within, but this is
+untested.
+* To run the notebooks in VSCode, you may need `uv sync --extra cpu --extra ipynb`
+* Or from pip `pip install "ipykernel>6.29"`
+</details>
+
+### Non-Colab install
+
+For new project:
+
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+2. Then run
+
+```bash
+uv venv --python 3.10
 source .venv/bin/activate
-pip install git+https://github.com/ghsanti/torch_practice
+uv add torch_practice[cpu]@git+https://github.com/ghsanti/torch_practice@dev
 ```
 
+Or from pip (but it needs Python 3.10 currently.):
+
+```bash
+EXTRA=cpu
+URL='git+https://github.com/ghsanti/torch_practice@dev'
+python3 -m pip install "torch_practice[${EXTRA}]@${URL}"
+```
+
+For GPUs, use the extra `cu124`, or `cu121` instead of `cpu`.
+
+For other systems, `cpu` will work (incl. Apple Silicon like M1s)
+
+If you want a pre release you can try something like (within your venv!):
+
+```bash
+ python -m ensurepip
+ python -m pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cpu
+ ```
+
+ Taken from 'nightly' tab at [torch start locally.](https://pytorch.org/get-started/locally/)
+
+## Run
 One then can run it:
 ```bash
 python -m torch_practice.simple_train
@@ -40,10 +94,6 @@ config["n_workers"] = 3
 # then train it.
 train(config)
 ```
-
-
-This package installs **torch+cpu** by default. For other hardware please install [torch from the matrix versions.](https://pytorch.org/get-started/locally/)
-
 
 ## Configuration
 
@@ -66,6 +116,7 @@ To control the sources of randomness one can pass a seed to the configuration di
 <summary>simple steps here</summary>
 1. Fork
 2. Clone your fork and run
+
 ```bash
 pip install uv
 uv venv

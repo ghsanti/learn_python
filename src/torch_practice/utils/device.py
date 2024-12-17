@@ -3,7 +3,7 @@
 import torch
 
 
-def get_device() -> str:
+def get_device_name() -> str:
   """Get the device to use."""
   device = "cpu"
   if torch.cuda.is_available():

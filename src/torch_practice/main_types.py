@@ -1,66 +1,48 @@
-"""Config object definition."""
+"""Configure Runtime, Arch, Saving etc."""
 
-import typing
 from collections.abc import Callable
+from pathlib import Path
 from typing import Literal, TypedDict
 
 import torch
+from torch.utils.data import DataLoader
+from torchvision.datasets import CIFAR10
 
-if typing.TYPE_CHECKING:
-  from torch.utils.data import DataLoader
-  from torchvision.datasets import CIFAR10
+CIFAR = DataLoader[CIFAR10]
 
-  CIFAR = DataLoader[CIFAR10]
-  _LogLevel = Literal["DEBUG", "INFO", "WARN", "CRITICAL"]
-else:
-  CIFAR = None
-  _LogLevel = None
+# Saving Types.
+SaveAtType = Literal["all", "improve"]
+# torchscript unsupported bc they do not allow basic typing.
+SaveModeType = Literal["state_dict", "full_model"]
+Extensions = Literal[".pth", ".pt", ".tar"]
 
+
+class SaverBaseArgs(TypedDict):
+  basedir: str | Path
+  save_every: int
+  save_mode: SaveModeType
+  save_at: SaveAtType
+
+
+# Logging Levels
+_LogLevel = Literal["DEBUG", "INFO", "WARN", "CRITICAL"]
+
+# Is loss minimised or maximised.
 LossModeType = Literal[
   "min",
   "max",
 ]
-SaveModeType = Literal["all", "better"]
 
 
+# Architecture configuration
 class DAEConfig(TypedDict):
-  """Configuration Dictionary for DAE params.
-
-  Note: BatchNorm always runs, so there isn't a switch.
-  """
-
-  # runtime config
-  seed: int | None  # if an int, uses `torch.set_manual(seed)`
-  log_level: _LogLevel
-  gradient_log: bool  # log the max abs value for each gradient in the net.
-  data_dir: str
-  # fraction on train, fraction on test (must add to 1)
-  prob_split: tuple[float, float]
-  # n_workers for dataloaders
-  n_workers: int
-  loss_mode: LossModeType
-  # min for minimisation (like MSE),
-  # max for maximisation (like accuracy).
-  save: SaveModeType | None
-  # all: all models
-  # better: if improves wrt previous
-  # None: no saving.
-  save_every: int  # this saves only every `int` epochs.
-  # (compounds with "better" if set.)
-  save_basedir: str  # save within, using subdirectory with the timestamp,
-  # this is for safety. (avoids overwriting, reusing some dir, etc.)
-
-  # general configuration
-  layers: int  # Number of layers in the encoder/decoder.
-  growth: float  # Growth factor for channels across layers.
-  batch_size: int  # critical hyperparameter.
   input_size: tuple[
     int,
     int,
     int,
   ]  # channels, height, width
-  lr: float  # learning rate
-  epochs: int
+  layers: int  # Number of layers in the encoder/decoder.
+  growth: float  # Growth factor for channels across layers.
 
   # conv layers
   init_out_channels: int  # initial output channels (1st conv.)
@@ -82,3 +64,33 @@ class DAEConfig(TypedDict):
   # latent vector
   latent_dimension: int
   dense_activ: Callable[[torch.Tensor], torch.Tensor]  # activation function
+
+
+class RunConfig(TypedDict):
+  """Configuration Dictionary for DAE params.
+
+  Note: BatchNorm always runs, so there isn't a switch.
+  """
+
+  # runtime config
+  seed: int | None  # if an int, uses `torch.set_manual(seed)`
+  log_level: _LogLevel
+  gradient_log: bool  # log the max abs value for each gradient in the net.
+  data_dir: str
+  # fraction on train, fraction on test (must add to 1)
+  prob_split: tuple[float, float]
+  # n_workers for dataloaders
+  n_workers: int
+  loss_mode: LossModeType  # min=minimisation, max=maximisation.
+  # note, only `torch.float16` or `torch.bfloat16` make sense, otherwise use `None`
+  autocast_dtype: torch.dtype | None  # possible datatypes for autocast
+  print_network_graph: bool  # if true prints a torchinfo summary.
+  # Hyperparameters
+  batch_size: int  # critical hyperparameter.
+  epochs: int
+  lr: float  # learning rate
+  # None won't save anything.
+  saver: SaverBaseArgs
+
+  # Architecture definition
+  arch: DAEConfig
