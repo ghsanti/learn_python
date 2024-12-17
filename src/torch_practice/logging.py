@@ -21,7 +21,7 @@ def logs(
   """Print general logs at the start of optimisation."""
   logger.info("Torch Version: %s", torch.__version__)
   sp_keys = {"arch": "ARCHITECTURE", "saver": "SAVING"}
-  logger.info("__Runtime Configuration__\n\n%s", str_config(config, sp_keys))
+  logger.info("__Runtime Configuration__\n\n%s\n", str_config(config, sp_keys))
   # optional network summary.
   if config["print_network_graph"] is True:
     from torchinfo import summary

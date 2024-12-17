@@ -58,26 +58,25 @@ uv add torch_practice[cpu]@git+https://github.com/ghsanti/torch_practice@dev
 Or from pip (but it needs Python 3.10 currently.):
 
 ```bash
-python3 -m pip install torch_practice[cpu]@git+https://github.com/ghsanti/torch_practice@dev
+EXTRA=cpu
+URL='git+https://github.com/ghsanti/torch_practice@dev'
+python3 -m pip install "torch_practice[${EXTRA}]@${URL}"
 ```
 
-For GPUs, use the extra `[cu124]` instead of `[cpu]`.
+For GPUs, use the extra `cu124`, or `cu121` instead of `cpu`.
 
 For other systems, `cpu` will work (incl. Apple Silicon like M1s)
 
-If you want a pre release of pytorch, you can try removing `[cpu]`
-
-And using something like (from within the virtual environment):
-
+If you want a pre release you can try something like (within your venv!):
 
 ```bash
  python -m ensurepip
  python -m pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cpu
  ```
 
- Which is taken from [the nightly tab of torch start locally.](https://pytorch.org/get-started/locally/)
+ Taken from 'nightly' tab at [torch start locally.](https://pytorch.org/get-started/locally/)
 
-
+## Run
 One then can run it:
 ```bash
 python -m torch_practice.simple_train
@@ -95,10 +94,6 @@ config["n_workers"] = 3
 # then train it.
 train(config)
 ```
-
-
-This package installs **torch+cpu** by default. For other hardware please install [torch from the matrix versions.](https://pytorch.org/get-started/locally/)
-
 
 ## Configuration
 
@@ -121,6 +116,7 @@ To control the sources of randomness one can pass a seed to the configuration di
 <summary>simple steps here</summary>
 1. Fork
 2. Clone your fork and run
+
 ```bash
 pip install uv
 uv venv

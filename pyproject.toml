@@ -68,10 +68,12 @@ conflicts = [[{ extra = "cpu" }, { extra = "cu124" }]]
 [tool.uv.sources]
 torch = [
     { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin' and platform_machine != 'aarch64'" },
+    { index = "pytorch-cu121", extra = "cu121", marker = "platform_system != 'Darwin'  and platform_machine != 'aarch64' " },
     { index = "pytorch-cu124", extra = "cu124", marker = "platform_system != 'Darwin' and platform_machine != 'aarch64'" },
 ]
 torchvision = [ # this is for linux arm; if you have mac silicon on linux docker, it should get it.
     { index = "pytorch-cpu", extra = "cpu", marker = "platform_system != 'Darwin' and platform_machine != 'aarch64'" },
+    { index = "pytorch-cu121", extra = "cu121", marker = "platform_system != 'Darwin'  and platform_machine != 'aarch64' " },
     { index = "pytorch-cu124", extra = "cu124", marker = "platform_system != 'Darwin'  and platform_machine != 'aarch64' " },
 ]
 
@@ -79,6 +81,11 @@ torchvision = [ # this is for linux arm; if you have mac silicon on linux docker
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
 explicit = true
 
 [[tool.uv.index]]
