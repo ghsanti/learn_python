@@ -23,7 +23,7 @@ def profile_forward(
   model: DynamicAE,
   input_size: tuple[int, int, int],
   batch_size: int,
-  device: str | None,
+  device: str | None = None,
 ) -> None:
   """Profile an instance of the model (inference).
 
@@ -76,3 +76,22 @@ def profile_forward(
     logger.info(
       prof.key_averages().table(sort_by="cpu_time_total", row_limit=10),
     )
+
+
+if __name__ == "__main__":
+  from torch_practice.default_config import default_config
+  from torch_practice.nn_arch import DynamicAE
+
+  c = default_config()
+  c["epochs"] = 400
+  c["batch_size"] = 12
+  c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
+  c["saver"]["save_every"] = 10
+  c["arch"]["c_activ"] = torch.nn.functional.relu
+  c["arch"]["dense_activ"] = torch.nn.functional.silu
+  c["arch"]["growth"] = 1.7
+  c["arch"]["layers"] = 3
+  c["arch"]["c_stride"] = 1
+  model = DynamicAE(c["arch"])
+  batch_size = 500  # large for +accurate profiling
+  profile_forward(model, c["arch"]["input_size"], batch_size, "cpu")
