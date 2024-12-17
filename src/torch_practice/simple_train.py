@@ -53,10 +53,10 @@ def train(config: RunConfig) -> None:
   )
   train, evaluation, _ = get_dataloaders(config)
 
-  # print general logs
+  # general logs
   logs(net, config, optimizer, criterion, device.type)
 
-  best_eval_loss = None
+  best_eval_loss = None  # we set this when necessary.
   epochs = config["epochs"]
 
   for i in range(epochs):
@@ -96,7 +96,7 @@ def train(config: RunConfig) -> None:
     if config["gradient_log"]:
       log_gradients(net)
 
-    # print epoch logs
+    # log epoch results
     epoch_logs(i, epochs, train_loss, eval_loss)
 
     # saving
@@ -120,7 +120,7 @@ if __name__ == "__main__":
   c = default_config()
   c["epochs"] = 400
   c["batch_size"] = 12
-  c["autocast_dtype"] = None  # torch.bfloat16
+  c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
   c["saver"]["save_every"] = 10
   c["arch"]["c_activ"] = torch.nn.functional.relu
   c["arch"]["dense_activ"] = torch.nn.functional.silu
