@@ -89,7 +89,6 @@ class RunConfig(TypedDict):
   batch_size: int  # critical hyperparameter.
   epochs: int
   lr: float  # learning rate
-
   # None won't save anything.
   saver: SaverBaseArgs
 
