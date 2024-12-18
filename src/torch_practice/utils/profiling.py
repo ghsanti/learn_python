@@ -22,6 +22,8 @@ def profile_forward(
   input_size: tuple[int, int, int],
   batch_size: int,
   device: str | None = None,
+  *,
+  generate_stack_trace: bool = False,
 ) -> None:
   """Profile an instance of the model (inference).
 
@@ -48,12 +50,15 @@ def profile_forward(
   model.to(device)
   img = torch.randn(batch_size, *input_size).to(device)
 
-  if device == "mps":
+  if device == "mpsx":
     from torch.mps import profiler
 
     with profiler.profile(mode="interval", wait_until_completed=False):
       logger.info("Running Mac MPS profile. Open with XCode Instruments tool.")
       model(img)
+      if generate_stack_trace:
+        logger.info("Stack Trace JSON file is unavailable for MPS.")
+        logger.info("Use `generate_stack_trace=False` in that case.")
 
   else:
     from torch.profiler import ProfilerActivity, profile, record_function
@@ -72,8 +77,13 @@ def profile_forward(
     ):
       model(img)
     logger.info(
-      prof.key_averages().table(sort_by="cpu_time_total", row_limit=10),
+      prof.key_averages().table(
+        sort_by=f"self_{device}_time_total",
+        row_limit=10,
+      ),
     )
+    if generate_stack_trace:
+      prof.export_chrome_trace("trace.json")
 
 
 if __name__ == "__main__":
@@ -93,4 +103,4 @@ if __name__ == "__main__":
   c["arch"]["c_stride"] = 1
   model = DynamicAE(c["arch"])
   batch_size = 500  # large for +accurate profiling
-  profile_forward(model, c["arch"]["input_size"], batch_size, "cpu")
+  profile_forward(model, c["arch"]["input_size"], batch_size, "mps")
