@@ -4,7 +4,7 @@ import logging
 
 from torch_practice.main_types import LossModeType
 
-logger = logging.getLogger(__package__)
+logger = logging.getLogger(__name__)
 
 
 def loss_improved(

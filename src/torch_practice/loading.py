@@ -20,7 +20,7 @@ if TYPE_CHECKING:
   from torch_practice.nn_arch import DynamicAE
 else:
   DynamicAE = None
-logger = logging.getLogger(__package__)
+logger = logging.getLogger(__name__)
 
 # full models are saved in .tar, state dicts in .pth
 

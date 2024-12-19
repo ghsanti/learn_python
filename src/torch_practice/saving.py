@@ -9,7 +9,7 @@ from torch_practice.main_types import Extensions, SaveModeType, SaverBaseArgs
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.utils.date_format import assert_date_format, make_timestamp
 
-logger = logging.getLogger(__package__)
+logger = logging.getLogger(__name__)
 
 
 class Save:

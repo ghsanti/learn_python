@@ -3,7 +3,7 @@
 import torch
 from torch.nn import MSELoss
 from torch.nn.utils import clip_grad_norm_
-from torch.optim import SGD
+from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 
@@ -38,12 +38,11 @@ def train_ae(config: RunConfig) -> None:
   net(torch.randn(1, *config["arch"]["input_size"]))  # initialise all layers
 
   net = net.to(device)  # after initialising and before `net.parameters()`
-  optimizer = SGD(
+  optimizer = Adam(
     params=net.parameters(),
     lr=config["lr"],
-    # weight_decay=1e-4,
-    momentum=0.9,
-    nesterov=True,
+    # momentum=0.9,
+    # nesterov=True,
   )
   criterion = MSELoss()
   lr_scheduler = ReduceLROnPlateau(
@@ -129,17 +128,20 @@ def train_ae(config: RunConfig) -> None:
 
 if __name__ == "__main__":
   # for python debugger
+  import logging
+
   from torch_practice.default_config import default_config
 
   c = default_config()
+  logging.basicConfig(level=c["logger"]["log_level"])
   c["epochs"] = 400
   c["batch_size"] = 64
   c["saver"]["save_every"] = 10
   # slower than 32 in local tests.
   c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
-  c["lr"] = 1e-2
+  c["lr"] = 1e-3
   c["patience"] = 5
-  c["arch"]["init_out_channels"] = 64
+  c["arch"]["init_out_channels"] = 32
   c["arch"]["dense_activ"] = torch.nn.functional.leaky_relu
   c["arch"]["c_activ"] = torch.nn.functional.leaky_relu
   c["arch"]["c_stride"] = 2

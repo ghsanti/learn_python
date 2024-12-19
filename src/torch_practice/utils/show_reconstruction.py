@@ -73,7 +73,7 @@ def reconstruct_tboard(
 
 
 if __name__ == "__main__":
-  logging.basicConfig(level="DEBUG")
+  logging.setLevel(level="DEBUG")
   c = default_config()
   c["epochs"] = 400
   c["batch_size"] = 64

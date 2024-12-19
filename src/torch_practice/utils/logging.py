@@ -42,8 +42,8 @@ class RuntimeLogger(logging.Logger):
     self.timestamp = make_timestamp()
     self.writer = self._set_up_writer()
     self.img_grid_done = False
-    self.logger = logging.getLogger(__package__)
-    # user can use `logging.basicConfig(...)` for full app logging control.
+    self.logger = logging.getLogger(__name__)
+    # user can use `logging.setLevel(...)` for full app logging control.
     self.logger.setLevel(level=self.log_level)
 
   def general(

@@ -3,8 +3,8 @@
 if __name__ == "__main__":
   import logging
 
-  logger = logging.getLogger(__package__)
-  logging.basicConfig(level="DEBUG")
+  logger = logging.getLogger(__name__)
+  logging.setLevel(level="DEBUG")
   import torch
 
   from torch_practice.default_config import default_config

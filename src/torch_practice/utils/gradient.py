@@ -7,7 +7,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from torch_practice.nn_arch import DynamicAE
 
-logger = logging.getLogger(__package__)
+logger = logging.getLogger(__name__)
 
 
 # We need to create a nice gradient logger, or DynamicAE Logger.

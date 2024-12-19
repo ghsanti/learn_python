@@ -8,7 +8,7 @@ from torchinfo import summary
 
 from torch_practice.utils.device import get_device_name
 
-logger = logging.getLogger(__package__)
+logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
@@ -94,7 +94,7 @@ if __name__ == "__main__":
   from torch_practice.default_config import default_config
   from torch_practice.nn_arch import DynamicAE
 
-  logging.basicConfig(level="DEBUG")  # default is warn
+  logging.setLevel(level="DEBUG")  # default is warn
   c = default_config()
   c["epochs"] = 400
   c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16

@@ -14,7 +14,7 @@ from torch_practice.main_types import RunConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.saving import Save, SaveModeType, SaverBaseArgs
 
-logger = logging.getLogger(__package__)
+logger = logging.getLogger(__name__)
 
 
 def minimal_model(

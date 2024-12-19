@@ -14,9 +14,18 @@ For Colab use:
 ```bash
 !pip3 install torch_practice[cu124]@git+https://github.com/ghsanti/torch_practice
 ```
-That's for CUDA. For CPU replace `[cu124]` for `[cpu]`. That's all you need.
+That's for CUDA. For CPU replace `[cu124]` `[cpu]`.
 
-You can check out simple examples in the [Notebooks](./notebooks/).
+Check out examples in the [Notebooks](./notebooks/). In all cases, one needs:
+
+```python
+import logging
+logging.basicConfig(level="DEBUG", force=True)
+```
+
+to see any training information (or "INFO" for succinct output.)
+
+`force` is only needed for Google Collaboratory.ß
 
 ----------
 
