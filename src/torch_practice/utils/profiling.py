@@ -23,6 +23,7 @@ def profile_forward(
   batch_size: int,
   device: str | None = None,
   *,
+  print_model: bool = False,
   generate_stack_trace: bool = False,
 ) -> None:
   """Profile an instance of the model (inference).
@@ -35,6 +36,8 @@ def profile_forward(
     input_size: tuple of size ints (channels, height, width)
     batch_size: n_samples to pass (use large for more accurate averages.)
     device: where to send it to, or it's automatically chosen (best available.)
+    print_model: whether to print (True) or not (False) a `torchinfo.summary`
+    generate_stack_trace: output a `trace.json` only use for cuda or cpu.
 
   """
   i_size = input_size
@@ -43,14 +46,15 @@ def profile_forward(
   # Initialise model (optional layers.)
   model(torch.randn((1, *i_size)))
 
-  summary(model, input_size=(1, *input_size))
+  if print_model:
+    summary(model, input_size=(1, *input_size))
 
   # send to device
   logger.debug("Device %s", device)
   model.to(device)
   img = torch.randn(batch_size, *input_size).to(device)
 
-  if device == "mpsx":
+  if device == "mps":
     from torch.mps import profiler
 
     with profiler.profile(mode="interval", wait_until_completed=False):
@@ -93,7 +97,6 @@ if __name__ == "__main__":
   logging.basicConfig(level="DEBUG")  # default is warn
   c = default_config()
   c["epochs"] = 400
-  c["batch_size"] = 12
   c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
   c["saver"]["save_every"] = 10
   c["arch"]["c_activ"] = torch.nn.functional.relu
@@ -103,4 +106,4 @@ if __name__ == "__main__":
   c["arch"]["c_stride"] = 1
   model = DynamicAE(c["arch"])
   batch_size = 500  # large for +accurate profiling
-  profile_forward(model, c["arch"]["input_size"], batch_size, "mps")
+  profile_forward(model, c["arch"]["input_size"], i, "cpu")

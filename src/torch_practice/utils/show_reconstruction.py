@@ -24,7 +24,7 @@ def reconstruct_tboard(
   config: RunConfig,
   recurse_depth: int = 1,
 ) -> None:
-  """Save a batch of predictions and originals to open in TensorBoard."""
+  """Retrieve best model and save batch of predictions and originals."""
   start_from = Path(config["saver"]["basedir"])
   loss_mode = c["loss_mode"]
   arch = config["arch"]
@@ -36,13 +36,12 @@ def reconstruct_tboard(
     path, _ = best_path
     if save_mode == "state_dict":
       load_state_dict(net, path)
-      net.eval()
     else:
       ckp = load_full_model(best_path[0], weights_only=False)
       net.load_state_dict(ckp["model_state_dict"])
-      net.eval()
 
-    writer = SummaryWriter("tboard_logs")
+    net.eval()
+    writer = SummaryWriter("runs")  # c["tboard_dir"])
 
     data = torch.utils.data.DataLoader(
       torchvision.datasets.CIFAR10(
@@ -55,48 +54,39 @@ def reconstruct_tboard(
           ],
         ),
       ),
-      batch_size=12,
-      shuffle=True,
+      batch_size=16,
     )
     # create grid of images
+
     with torch.no_grad():
       imgs, _ = next(iter(data))
 
+      net.eval()
       r = net(imgs)
-      imgs = imgs / 2 + 0.5
-      r = r / 2 + 0.5
+      # r = r / 2 + 0.5
+      # imgs = imgs / 2 + 0.5
       img_grid = torchvision.utils.make_grid(imgs)
       net_img_grid = torchvision.utils.make_grid(r)  # needs forward pass
-      writer.add_image("images1", img_grid)
-      writer.add_image("images2", net_img_grid)
+      writer.add_image("images_original", img_grid)
+      writer.add_image("images2_predicted", net_img_grid)
     writer.close()
 
 
 if __name__ == "__main__":
   logging.basicConfig(level="DEBUG")
   c = default_config()
-  c["arch"] = {
-    # architecture
-    "growth": 1.7,
-    "init_out_channels": 6,
-    "layers": 3,
-    "input_size": (3, 32, 32),
-    # convolution
-    "c_kernel": 2,
-    "c_stride": 1,
-    "c_activ": torch.nn.functional.leaky_relu,
-    # pool
-    "use_pool": False,
-    "p_kernel": 2,
-    "p_stride": 2,
-    # dropout
-    "use_dropout2d": True,
-    "dropout2d_rate": 0.3,
-    "dropout_rate_latent": 0.3,
-    "use_dropout_latent": False,
-    # dense
-    "latent_dimension": 96,
-    "dense_activ": torch.nn.functional.silu,
-  }
+  c["epochs"] = 400
+  c["batch_size"] = 64
+  c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
+  c["saver"]["save_every"] = 10
+  c["arch"]["c_activ"] = torch.nn.functional.silu
+  c["arch"]["dense_activ"] = torch.nn.functional.silu
+  c["arch"]["growth"] = 1.7
+  c["arch"]["layers"] = 3
+  c["arch"]["c_stride"] = 1
+  c["gradient_log"] = True
+  c["lr"] = 0.01
+  c["arch"]["dropout_rate_latent"] = 0.1
+  c["arch"]["dropout2d_rate"] = 0.1
   net = DynamicAE(c["arch"])
   reconstruct_tboard(net, "state_dict", c, 1)

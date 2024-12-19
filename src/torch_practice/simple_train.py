@@ -1,24 +1,21 @@
 """Train the AE."""
 
-import logging
-
 import torch
 from torch.nn import MSELoss
-from torch.optim import SGD
+from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 
 from torch_practice.dataloading import get_dataloaders
-from torch_practice.logging import epoch_logs, log_gradients, logs
 from torch_practice.main_types import RunConfig
 from torch_practice.nn_arch import DynamicAE
 from torch_practice.saving import Save
 from torch_practice.utils.device import get_device_name
+from torch_practice.utils.logging import RuntimeLogger
 from torch_practice.utils.track_loss import loss_improved
 
-logger = logging.getLogger(__package__)
 
-
-def train(config: RunConfig) -> None:
+def train_ae(config: RunConfig) -> None:
   """Train the AutoEncoder.
 
   Args:
@@ -31,7 +28,7 @@ def train(config: RunConfig) -> None:
   The Loss and Optimizer are currently fixed (MSE and SGD respectively.)
 
   """
-  logging.basicConfig(level=config["log_level"])
+  logger = RuntimeLogger(config)
   if config["seed"] is not None:
     torch.manual_seed(config["seed"])
 
@@ -40,21 +37,23 @@ def train(config: RunConfig) -> None:
   net(torch.randn(1, *config["arch"]["input_size"]))  # initialise all layers
 
   net = net.to(device)  # after initialising and before `net.parameters()`
-  optimizer = SGD(
+  optimizer = Adam(
     params=net.parameters(),  # weights and biases
     lr=config["lr"],
     weight_decay=1e-4,
   )
   criterion = MSELoss()
+  lr_scheduler = ReduceLROnPlateau(optimizer, patience=3)
   saver = (
     Save(config["saver"], net, criterion, optimizer)
     if config["saver"] is not None
     else None
   )
-  train, evaluation, _ = get_dataloaders(config)
+  train, evaluation, test = get_dataloaders(config)
+  test, _ = next(iter(test))  # use 1 test batch.
 
   # general logs
-  logs(net, config, optimizer, criterion, device.type)
+  logger.general(net, config, optimizer, criterion, device.type)
 
   best_eval_loss = None  # we set this when necessary.
   epochs = config["epochs"]
@@ -62,8 +61,8 @@ def train(config: RunConfig) -> None:
   for i in range(epochs):
     train_loss, eval_loss = 0.0, 0.0
 
-    net.train()
-    for images, _ in tqdm(train):
+    net.train(mode=True)
+    for bi, (images, _) in enumerate(tqdm(train)):
       imgs = images.to(device)
       optimizer.zero_grad()
       with torch.autocast(
@@ -74,10 +73,15 @@ def train(config: RunConfig) -> None:
         loss = criterion(net(imgs), imgs)
 
       loss.backward()  # updates occur per batch.
+      torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=1.0)
       optimizer.step()
-      train_loss += loss.item()
+      loss_value = loss.item()
+      train_loss += loss_value
+      tb_x = i * len(train) + bi + 1  # gives us full trace
+      if logger.writer is not None:
+        logger.writer.add_scalar("Batch Loss", loss_value, tb_x)
 
-    net.eval()
+    net.train(mode=False)
     for images_ev, _ in tqdm(evaluation):
       imgs_ev = images_ev.to(device)
       with (
@@ -92,12 +96,8 @@ def train(config: RunConfig) -> None:
 
     train_loss = train_loss / len(train)
     eval_loss = eval_loss / len(evaluation)
-
-    if config["gradient_log"]:
-      log_gradients(net)
-
-    # log epoch results
-    epoch_logs(i, epochs, train_loss, eval_loss)
+    lr_scheduler.step(eval_loss)
+    logger.get_last_lr(lr_scheduler)
 
     # saving
     if saver is not None and saver.save_time(epoch=i):
@@ -112,6 +112,11 @@ def train(config: RunConfig) -> None:
       if saver.at == "all" or improved:
         saver.save_model(i + 1, eval_loss)
 
+    # epoch logs
+    logger.tboard_gradient_stats(net, i)
+    logger.tboard_inference_on_batch(net, device.type, test, i)
+    logger.on_epoch_end(i, epochs, train_loss, eval_loss)
+
 
 if __name__ == "__main__":
   # for python debugger
@@ -119,12 +124,18 @@ if __name__ == "__main__":
 
   c = default_config()
   c["epochs"] = 400
-  c["batch_size"] = 12
-  c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
+  c["batch_size"] = 64
   c["saver"]["save_every"] = 10
-  c["arch"]["c_activ"] = torch.nn.functional.relu
-  c["arch"]["dense_activ"] = torch.nn.functional.silu
-  c["arch"]["growth"] = 1.7
+  # slower than 32 in local tests.
+  c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
+  c["lr"] = 0.002
+  c["arch"]["init_out_channels"] = 32
+  c["arch"]["dense_activ"] = torch.nn.functional.leaky_relu
+  c["arch"]["c_activ"] = torch.nn.functional.leaky_relu
+  c["arch"]["c_stride"] = 2
+  c["arch"]["growth"] = 2
   c["arch"]["layers"] = 3
-  c["arch"]["c_stride"] = 1
-  train(c)
+  c["arch"]["dropout_rate_latent"] = 0.1
+  c["arch"]["dropout2d_rate"] = 0.2
+  c["arch"]["latent_dimension"] = 64
+  train_ae(c)

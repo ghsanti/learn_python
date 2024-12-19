@@ -8,21 +8,24 @@ from torch_practice.main_types import RunConfig
 def default_config() -> RunConfig:
   """Create a default configuration."""
   return {
-    # general runtime
+    # GENERAL
     "seed": None,
-    "log_level": "DEBUG",
-    "gradient_log": False,
-    "data_dir": "./data",
+    "data_dir": "data",
     "prob_split": (0.8, 0.2),
     "n_workers": 2,
     "loss_mode": "min",
-    # HyperParameters (also the architecture to an extent.)
+    # HyperParameters
     "batch_size": 12,
     "autocast_dtype": None,
-    "print_network_graph": True,
-    "lr": 0.001,
+    "lr": 0.0002,
     "epochs": 10,
-    "saver": {  # replace dict with None for no saving!
+    "logger": {
+      "gradients": True,
+      "log_level": "DEBUG",
+      "network_graph": True,
+      "tboard_dir": "tboard_logs",
+    },
+    "saver": {  # `basedir: None` for no saving
       "basedir": "checkpoints",
       "save_every": 3,
       "save_mode": "state_dict",
@@ -31,24 +34,22 @@ def default_config() -> RunConfig:
     "arch": {
       # architecture
       "growth": 2,
-      "init_out_channels": 6,
+      "init_out_channels": 12,
       "layers": 3,
       "input_size": (3, 32, 32),
       # convolution
       "c_kernel": 2,
-      "c_stride": 1,
-      "c_activ": torch.nn.functional.leaky_relu,
+      "c_stride": 2,
+      "c_activ": torch.nn.functional.relu,
       # pool
       "use_pool": False,
       "p_kernel": 2,
-      "p_stride": 2,
+      "p_stride": 1,
       # dropout
-      "use_dropout2d": True,
-      "dropout2d_rate": 0.3,
-      "dropout_rate_latent": 0.3,
-      "use_dropout_latent": False,
+      "dropout2d_rate": 0.2,
+      "dropout_rate_latent": 0.2,
       # dense
-      "latent_dimension": 96,
-      "dense_activ": torch.nn.functional.leaky_relu,
+      "latent_dimension": 72,
+      "dense_activ": torch.nn.functional.relu,
     },
   }

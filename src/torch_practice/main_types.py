@@ -20,12 +20,19 @@ Extensions = Literal[".pth", ".pt", ".tar"]
 class SaverBaseArgs(TypedDict):
   basedir: str | Path
   save_every: int
-  save_mode: SaveModeType
-  save_at: SaveAtType
+  save_mode: SaveModeType | None
+  save_at: SaveAtType | None
 
 
-# Logging Levels
 _LogLevel = Literal["DEBUG", "INFO", "WARN", "CRITICAL"]
+
+
+class LoggerBaseArgs(TypedDict):
+  log_level: _LogLevel
+  gradients: bool
+  network_graph: bool
+  tboard_dir: str | None
+
 
 # Is loss minimised or maximised.
 LossModeType = Literal[
@@ -33,14 +40,12 @@ LossModeType = Literal[
   "max",
 ]
 
+CHW = tuple[int, int, int]
+
 
 # Architecture configuration
 class DAEConfig(TypedDict):
-  input_size: tuple[
-    int,
-    int,
-    int,
-  ]  # channels, height, width
+  input_size: CHW  # `(channels, height, width)`
   layers: int  # Number of layers in the encoder/decoder.
   growth: float  # Growth factor for channels across layers.
 
@@ -51,10 +56,10 @@ class DAEConfig(TypedDict):
   c_activ: Callable[[torch.Tensor], torch.Tensor]  # activation function
 
   # dropout layers
-  use_dropout2d: bool  # for convolutions
-  dropout2d_rate: float
-  use_dropout_latent: bool
-  dropout_rate_latent: float  # dense layer before and after the latent vec.
+  dropout2d_rate: float | None
+  dropout_rate_latent: (
+    float | None
+  )  # dense layer before and after the latent vec.
 
   # pool layers
   use_pool: bool
@@ -74,17 +79,16 @@ class RunConfig(TypedDict):
 
   # runtime config
   seed: int | None  # if an int, uses `torch.set_manual(seed)`
-  log_level: _LogLevel
-  gradient_log: bool  # log the max abs value for each gradient in the net.
+  logger: LoggerBaseArgs
   data_dir: str
   # fraction on train, fraction on test (must add to 1)
   prob_split: tuple[float, float]
   # n_workers for dataloaders
   n_workers: int
-  loss_mode: LossModeType  # min=minimisation, max=maximisation.
-  # note, only `torch.float16` or `torch.bfloat16` make sense, otherwise use `None`
+
+  # `torch.float16`, `torch.bfloat16` or use `None`
   autocast_dtype: torch.dtype | None  # possible datatypes for autocast
-  print_network_graph: bool  # if true prints a torchinfo summary.
+  loss_mode: LossModeType
   # Hyperparameters
   batch_size: int  # critical hyperparameter.
   epochs: int

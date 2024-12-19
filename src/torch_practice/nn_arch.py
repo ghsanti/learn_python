@@ -33,7 +33,7 @@ def create_layers(
       ),
     )
     batch.append(nn.LazyBatchNorm2d())
-  if is_transpose:# Keep same length but make out layer have no BN.
+  if is_transpose:  # Keep same length but make out layer have no BN.
     batch[0] = nn.Identity()
   return convs, batch
 
@@ -65,12 +65,12 @@ class DynamicEncoder(nn.Module):
     )
     self.dropout2d = (
       nn.Dropout2d(self.config["dropout2d_rate"])
-      if self.config["use_dropout2d"]
+      if self.config["dropout2d_rate"] is not None
       else nn.Identity()
     )
     self.dropout = (
       nn.Dropout(self.config["dropout_rate_latent"])
-      if self.config["use_dropout_latent"]
+      if self.config["dropout_rate_latent"] is not None
       else nn.Identity()
     )
     self.convs, self.batch_norms = create_layers(
@@ -143,12 +143,12 @@ class DynamicDecoder(nn.Module):
 
     self.dropout2d = (
       nn.Dropout2d(self.config["dropout2d_rate"])
-      if self.config["use_dropout2d"]
+      if self.config["dropout2d_rate"] is not None
       else nn.Identity()
     )
     self.dropout = (
       nn.Dropout(self.config["dropout_rate_latent"])
-      if self.config["use_dropout_latent"]
+      if self.config["dropout_rate_latent"] is not None
       else nn.Identity()
     )
 
@@ -187,7 +187,7 @@ class DynamicDecoder(nn.Module):
         conv, batch = self.tconvs[c], self.batch_norms[c]
         x = conv(x, output_size=shape)
         if i == 0:  # last layer, no batch norm
-          return x
+          return torch.sigmoid(x)
         x = self.dropout2d(conv_activation(batch(x)))
         c -= 1
       elif name == "pool":
