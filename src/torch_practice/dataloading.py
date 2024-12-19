@@ -23,6 +23,7 @@ def get_dataloaders(
   transform = transforms.Compose(  # list of transformations.
     [
       transforms.ToTensor(),
+      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ],
   )
 

@@ -18,6 +18,7 @@ def default_config() -> RunConfig:
     "batch_size": 12,
     "autocast_dtype": None,
     "lr": 0.0002,
+    "patience": 7,
     "epochs": 10,
     "logger": {
       "gradients": True,

@@ -34,41 +34,44 @@ class LoggerBaseArgs(TypedDict):
   tboard_dir: str | None
 
 
-# Is loss minimised or maximised.
-LossModeType = Literal[
-  "min",
-  "max",
-]
+LossModeType = Literal["min", "max"]
+"""Is loss minimised or maximised."""
 
 CHW = tuple[int, int, int]
+"""Channels, Height, Width tuple."""
 
 
 # Architecture configuration
 class DAEConfig(TypedDict):
-  input_size: CHW  # `(channels, height, width)`
-  layers: int  # Number of layers in the encoder/decoder.
-  growth: float  # Growth factor for channels across layers.
-
+  input_size: CHW
+  """`(channels, height, width)`"""
+  layers: int
+  """Number of layers in the encoder/decoder."""
+  growth: float
+  """Growth factor for channels across layers."""
   # conv layers
-  init_out_channels: int  # initial output channels (1st conv.)
-  c_kernel: int  # Kernel size for convolution layers.
-  c_stride: int  # Stride for convolution layers.
-  c_activ: Callable[[torch.Tensor], torch.Tensor]  # activation function
-
+  init_out_channels: int
+  """initial output channels (1st conv.)"""
+  c_kernel: int
+  """Kernel size for convolution layers."""
+  c_stride: int
+  """Stride for convolution layers."""
+  c_activ: Callable[[torch.Tensor], torch.Tensor]
+  """activation function"""
   # dropout layers
   dropout2d_rate: float | None
-  dropout_rate_latent: (
-    float | None
-  )  # dense layer before and after the latent vec.
-
+  dropout_rate_latent: float | None
+  """dense layer before and after the latent vec."""
   # pool layers
   use_pool: bool
-  p_kernel: int  # Kernel size for pooling layers.
-  p_stride: int  # Stride for pooling layers.
-
-  # latent vector
+  p_kernel: int
+  """Kernel size for pooling layers."""
+  p_stride: int
+  """Stride for pooling layers."""
   latent_dimension: int
-  dense_activ: Callable[[torch.Tensor], torch.Tensor]  # activation function
+  """Dimensionality of the encoded vector (encoder output.)"""
+  dense_activ: Callable[[torch.Tensor], torch.Tensor]
+  """activation function"""
 
 
 class RunConfig(TypedDict):
@@ -78,23 +81,31 @@ class RunConfig(TypedDict):
   """
 
   # runtime config
-  seed: int | None  # if an int, uses `torch.set_manual(seed)`
+  seed: int | None
+  """if an int, uses `torch.set_manual(seed)`"""
   logger: LoggerBaseArgs
+  """The logger is tied to the RunConfig, but these are its init args."""
   data_dir: str
-  # fraction on train, fraction on test (must add to 1)
+  """Where to search for the datasets, or it downloads it therein."""
   prob_split: tuple[float, float]
-  # n_workers for dataloaders
+  """fraction on train, fraction on test (must add to 1)"""
   n_workers: int
-
-  # `torch.float16`, `torch.bfloat16` or use `None`
-  autocast_dtype: torch.dtype | None  # possible datatypes for autocast
+  """n_workers for dataloaders"""
+  autocast_dtype: torch.dtype | None
+  """Datatypes for autocast: torch.float16 | torch.bfloat16 | None.
+  None uses the default (float32)."""
   loss_mode: LossModeType
+  """min or max"""
   # Hyperparameters
-  batch_size: int  # critical hyperparameter.
+  batch_size: int
+  """How the dataloader batches the data, and it's passed to training."""
   epochs: int
-  lr: float  # learning rate
-  # None won't save anything.
+  """Total number of epochs."""
+  lr: float
+  """Learning rate"""
+  patience: int
+  """How many epochs to wait before reducing learning rate"""
   saver: SaverBaseArgs
-
-  # Architecture definition
+  """Base arguments for `Save.__init__`. `None` won't use it."""
   arch: DAEConfig
+  """Architecture definition"""

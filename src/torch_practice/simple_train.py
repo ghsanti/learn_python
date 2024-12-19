@@ -2,7 +2,8 @@
 
 import torch
 from torch.nn import MSELoss
-from torch.optim import Adam
+from torch.nn.utils import clip_grad_norm_
+from torch.optim import SGD
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 
@@ -37,13 +38,19 @@ def train_ae(config: RunConfig) -> None:
   net(torch.randn(1, *config["arch"]["input_size"]))  # initialise all layers
 
   net = net.to(device)  # after initialising and before `net.parameters()`
-  optimizer = Adam(
-    params=net.parameters(),  # weights and biases
+  optimizer = SGD(
+    params=net.parameters(),
     lr=config["lr"],
-    weight_decay=1e-4,
+    # weight_decay=1e-4,
+    momentum=0.9,
+    nesterov=True,
   )
   criterion = MSELoss()
-  lr_scheduler = ReduceLROnPlateau(optimizer, patience=3)
+  lr_scheduler = ReduceLROnPlateau(
+    optimizer,
+    patience=config["patience"],
+    min_lr=10e-8,
+  )
   saver = (
     Save(config["saver"], net, criterion, optimizer)
     if config["saver"] is not None
@@ -73,7 +80,7 @@ def train_ae(config: RunConfig) -> None:
         loss = criterion(net(imgs), imgs)
 
       loss.backward()  # updates occur per batch.
-      torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=1.0)
+      clip_grad_norm_(net.parameters(), max_norm=1.0)
       optimizer.step()
       loss_value = loss.item()
       train_loss += loss_value
@@ -97,7 +104,7 @@ def train_ae(config: RunConfig) -> None:
     train_loss = train_loss / len(train)
     eval_loss = eval_loss / len(evaluation)
     lr_scheduler.step(eval_loss)
-    logger.get_last_lr(lr_scheduler)
+    logger.last_lr(lr_scheduler)
 
     # saving
     if saver is not None and saver.save_time(epoch=i):
@@ -128,14 +135,14 @@ if __name__ == "__main__":
   c["saver"]["save_every"] = 10
   # slower than 32 in local tests.
   c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
-  c["lr"] = 0.002
-  c["arch"]["init_out_channels"] = 32
+  c["lr"] = 5e-4
+  c["arch"]["init_out_channels"] = 64
   c["arch"]["dense_activ"] = torch.nn.functional.leaky_relu
   c["arch"]["c_activ"] = torch.nn.functional.leaky_relu
   c["arch"]["c_stride"] = 2
   c["arch"]["growth"] = 2
   c["arch"]["layers"] = 3
   c["arch"]["dropout_rate_latent"] = 0.1
-  c["arch"]["dropout2d_rate"] = 0.2
-  c["arch"]["latent_dimension"] = 64
+  c["arch"]["dropout2d_rate"] = 0.4
+  c["arch"]["latent_dimension"] = 72
   train_ae(c)

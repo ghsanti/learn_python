@@ -6,7 +6,6 @@ the Logger in stdlib.
 """
 
 import logging
-from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -15,8 +14,9 @@ import torchvision
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from torch_practice.utils.date_format import make_timestamp
-from torch_practice.utils.gradient import get_gradient_statistics
+from .date_format import make_timestamp
+from .gradient import get_gradient_statistics
+from .pp_dict import pp_dict
 
 if TYPE_CHECKING:
   from torch_practice.main_types import RunConfig
@@ -42,7 +42,8 @@ class RuntimeLogger(logging.Logger):
     self.network_graph = base_args["network_graph"]
     self.tboard_dir = base_args["tboard_dir"]
     self.timestamp = make_timestamp()
-    self.writer = self.set_up_writer()
+    self.writer = self._set_up_writer()
+    self.img_grid_done = False
 
     logging.basicConfig(level=self.log_level)
 
@@ -56,10 +57,9 @@ class RuntimeLogger(logging.Logger):
   ) -> None:
     """Print general logs at the start of optimisation."""
     logger.info("Torch Version: %s", torch.__version__)
-    sp_keys = {"arch": "ARCHITECTURE", "saver": "SAVING", "logger": "LOGGING"}
     logger.info(
       "__Runtime Configuration__\n\n%s\n",
-      pp_dict(config, sp_keys),
+      pp_dict(config, 4),
     )
     # optional network summary.
     if self.network_graph is True:
@@ -99,13 +99,17 @@ class RuntimeLogger(logging.Logger):
         net = net.to(device)
         imgs = test_batch.to(device)
         r = net(imgs)
-        img_grid = torchvision.utils.make_grid(imgs)
+        r = r / 2 + 0.5
+        if not self.img_grid_done:
+          imgs = imgs / 2 + 0.5
+          img_grid = torchvision.utils.make_grid(imgs)
+          self.writer.add_image("images_original", img_grid, epoch)
+          self.img_grid_done = True
         net_img_grid = torchvision.utils.make_grid(r)  # needs forward pass
         # no index needed, see tboard magic
-        self.writer.add_image("images_original", img_grid, epoch)
         self.writer.add_image("images_predicted", net_img_grid, epoch)
 
-  def get_last_lr(self, lr_scheduler: LRScheduler) -> None:
+  def last_lr(self, lr_scheduler: LRScheduler) -> None:
     """Log last learning rate used by scheduler."""
     try:
       logger.debug("Current learning rate %s", lr_scheduler.get_last_lr())
@@ -134,38 +138,11 @@ class RuntimeLogger(logging.Logger):
     msg = f"{msg1}  |  {msg2}  |  {msg3}"
     logger.info(msg)
 
-  def set_up_writer(self) -> None:
+  def _set_up_writer(self) -> SummaryWriter | None:
     """If tboard_dir is set, it creates a writer."""
     if self.tboard_dir is not None:
       subdir = f"{__package__}_{self.timestamp}"
-      self.writer = SummaryWriter(Path(self.tboard_dir) / subdir)
+      writer = SummaryWriter(Path(self.tboard_dir) / subdir)
     else:
-      self.writer = None
-
-
-def pp_dict(
-  config: RunConfig | dict,
-  log_at: dict[str, str] | None = None,
-  indent: int = 0,
-) -> str:
-  """Recursively clean up config classes and names for logging.
-
-  Args:
-    config: full configuration object
-    log_at: Added `msg` at specific `key_name`
-    indent: how many spaces to indent at sublevels.
-
-  """
-  to_join = []
-  for k, v in config.items():
-    if log_at is not None and k in log_at:
-      to_join.append("\n" + log_at[k] + "\n")
-    new_val = v
-    if isinstance(v, Callable):
-      new_val = v.__name__
-    elif isinstance(v, dict):
-      new_val = " " * indent + pp_dict(v)
-    elif not isinstance(v, bool | str | int | float | tuple):
-      new_val = v.__class__.__name__
-    to_join.append(f"{k} = {new_val}")
-  return "\n".join(to_join)
+      writer = None
+    return writer

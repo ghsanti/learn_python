@@ -50,7 +50,6 @@ class Save:
     self.net = net
     self.criterion = criterion
     self.optim = optimizer
-    self.timestamp = make_timestamp()
 
     if self.mode not in self._supported_modes:
       msg = f"{self.mode} not in supported modes ({self._supported_modes})"
@@ -71,7 +70,7 @@ class Save:
     This function will error if the new directory already exists.
     """
     self.basedir = basedir
-    savedir = Path(basedir) / self.timestamp
+    savedir = Path(basedir) / make_timestamp()
     savedir = savedir.expanduser()
     assert_date_format(savedir)  # re-check it can be parsed back.
     savedir.mkdir(parents=True, exist_ok=False)
