@@ -25,8 +25,6 @@ else:
   RunConfig = None
   DynamicAE = None
 
-logger = logging.getLogger(__package__)
-
 
 class RuntimeLogger(logging.Logger):
   def __init__(self, config: RunConfig) -> None:
@@ -44,8 +42,9 @@ class RuntimeLogger(logging.Logger):
     self.timestamp = make_timestamp()
     self.writer = self._set_up_writer()
     self.img_grid_done = False
-
-    logging.basicConfig(level=self.log_level)
+    self.logger = logging.getLogger(__package__)
+    # user can use `logging.basicConfig(...)` for full app logging control.
+    self.logger.setLevel(level=self.log_level)
 
   def general(
     self,
@@ -56,8 +55,8 @@ class RuntimeLogger(logging.Logger):
     device: str,
   ) -> None:
     """Print general logs at the start of optimisation."""
-    logger.info("Torch Version: %s", torch.__version__)
-    logger.info(
+    self.logger.info("Torch Version: %s", torch.__version__)
+    self.logger.info(
       "__Runtime Configuration__\n\n%s\n",
       pp_dict(config, 4),
     )
@@ -71,10 +70,10 @@ class RuntimeLogger(logging.Logger):
         device=device,
         verbose=0,
       )
-      logger.info(str(result_stats))
-    logger.debug("Network Device %s", device)
-    logger.info("Optimizer %s", optimizer.__class__.__name__)
-    logger.info("Loss with %s", criterion.__class__.__name__)
+      self.logger.info(str(result_stats))
+    self.logger.debug("Network Device %s", device)
+    self.logger.info("Optimizer %s", optimizer.__class__.__name__)
+    self.logger.info("Loss with %s", criterion.__class__.__name__)
 
   def tboard_gradient_stats(
     self,
@@ -112,9 +111,9 @@ class RuntimeLogger(logging.Logger):
   def last_lr(self, lr_scheduler: LRScheduler) -> None:
     """Log last learning rate used by scheduler."""
     try:
-      logger.debug("Current learning rate %s", lr_scheduler.get_last_lr())
+      self.logger.debug("Current learning rate %s", lr_scheduler.get_last_lr())
     except NotImplementedError:
-      logger.warning("Tried to get current learning rate but failed.")
+      self.logger.warning("Tried to get current learning rate but failed.")
 
   def on_epoch_end(
     self,
@@ -136,7 +135,7 @@ class RuntimeLogger(logging.Logger):
     msg2 = f"loss train: {train_loss:.3f}"
     msg3 = f"eval: {eval_loss:.3f}"
     msg = f"{msg1}  |  {msg2}  |  {msg3}"
-    logger.info(msg)
+    self.logger.info(msg)
 
   def _set_up_writer(self) -> SummaryWriter | None:
     """If tboard_dir is set, it creates a writer."""

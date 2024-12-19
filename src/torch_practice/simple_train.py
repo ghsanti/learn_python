@@ -50,6 +50,8 @@ def train_ae(config: RunConfig) -> None:
     optimizer,
     patience=config["patience"],
     min_lr=10e-8,
+    factor=0.5,
+    cooldown=10,
   )
   saver = (
     Save(config["saver"], net, criterion, optimizer)
@@ -135,7 +137,8 @@ if __name__ == "__main__":
   c["saver"]["save_every"] = 10
   # slower than 32 in local tests.
   c["autocast_dtype"] = None  # None|torch.bfloat16|torch.float16
-  c["lr"] = 5e-4
+  c["lr"] = 1e-2
+  c["patience"] = 5
   c["arch"]["init_out_channels"] = 64
   c["arch"]["dense_activ"] = torch.nn.functional.leaky_relu
   c["arch"]["c_activ"] = torch.nn.functional.leaky_relu
@@ -143,6 +146,6 @@ if __name__ == "__main__":
   c["arch"]["growth"] = 2
   c["arch"]["layers"] = 3
   c["arch"]["dropout_rate_latent"] = 0.1
-  c["arch"]["dropout2d_rate"] = 0.4
-  c["arch"]["latent_dimension"] = 72
+  c["arch"]["dropout2d_rate"] = 0.3
+  c["arch"]["latent_dimension"] = 64
   train_ae(c)
